@@ -1,7 +1,7 @@
 import os
 import datetime
 import csv
-import DirectoryExlorer
+import DirectoryExlorer as CD
 import json
 
 
@@ -27,19 +27,15 @@ GARAGEM = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\polygons\garagem\OF
 # self.circuito = base_path.split("\\")[ix_circuito]
 # self.realizacao = self.base_path.split("\\")[ix_realizacao]
 
-y = DirectoryExlorer.CircuitDir()
-y.CIRCUITJSONDIR
-dir = y.CIRCUITJSONDIR
-x = DirectoryExlorer.DictionaryExplorer()
-newdir = x.recursive_dictglobalexplorer(dir)
+x = CD.CircuitDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01")
+x.setCircuitPaths()
+shift = CD.ShiftDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\trips\todo\trip_name")
+shift.setShiftPaths()
 
 
 
 
-
-
-
-print(y.voyagedict)
+print(shift.shiftpaths)
 ######################################################
 ################## ##################
 ######################################################
