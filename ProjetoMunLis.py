@@ -29,6 +29,7 @@ GARAGEM = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\polygons\garagem\OF
 
 x = CD.CircuitDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01")
 x.setCircuitPaths()
+a = x.getRealizacoesDoNe()
 shift = CD.ShiftDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\trips\todo\trip_name")
 shift.setShiftPaths()
 
