@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ProjetoMunLis", "ProjetoMunLis.pyproj", "{7AC53D54-5F08-4B71-98CA-5A9F61F1E84F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7AC53D54-5F08-4B71-98CA-5A9F61F1E84F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AC53D54-5F08-4B71-98CA-5A9F61F1E84F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EB0752BF-3A17-4ACA-A9B7-69D9089E2E8C}
+	EndGlobalSection
+EndGlobal
