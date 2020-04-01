@@ -3,12 +3,14 @@ import datetime
 import csv
 import DirectoryExlorer as CD
 import json
-
+from toolsgis import *
+import functools
 
 linha_split = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\linha_split\linha_split.shp"
 merged = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\merged\merged.shp"
 pontos = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\pontos\pontos.shp"
 pontos_merged = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\pontos_merged\pontos_merged.shp"
+pontos_merged1 = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\pontos_merged\pontos_merged1.shp"
 pontos_merged_buffer = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\pontos_merged_buffer\pontos_merged_buffer.shp"
 prs = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\prs\prs.shp"
 prs_area = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\realizacoes\I0104_V2520_12_01_2020\analysis_products\prs_area\prs_area.shp"
@@ -27,16 +29,24 @@ GARAGEM = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\I0104\polygons\garagem\OF
 # self.circuito = base_path.split("\\")[ix_circuito]
 # self.realizacao = self.base_path.split("\\")[ix_realizacao]
 
-x = CD.CircuitDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01")
-x.setCircuitPaths()
-a = x.getRealizacoesDoNe()
-shift = CD.ShiftDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\trips\todo\trip_name")
-shift.setShiftPaths()
+#x = CD.CircuitDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01")
+#x.setCircuitPaths()
+#a = x.getRealizacoesDoNe()
+#shift = CD.ShiftDir(r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\trips\todo\trip_name")
+#shift.setShiftPaths()
+#print(shift.shiftpaths)
+
+######################################################
+################## ##################
+######################################################
 
 
 
+add_idfield2shpfile(pontos_merged,"ID")
+#discard_fieldsInshpfile(pontos_merged,["AIAIII","AIAI","AAD","ImD","ID"])
+addfieldcode(pontos_merged,"ZONE","CIRCUITO")
+print("Finished running")
 
-print(shift.shiftpaths)
 ######################################################
 ################## ##################
 ######################################################

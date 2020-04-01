@@ -1,23 +1,7 @@
 import arcpy
-import functools
 import time
-
-
-def timer(func):
-    """Print the runtime of the decorated function"""
-    @functools.wraps(func)
-    def wrapper_timer(*args, **kwargs):
-        try:
-           start_time = time.time()    # 1
-           value = func(*args,**kwargs)
-           end_time = time.time()      # 2
-           run_time = end_time - start_time    # 3
-           print("Finished " + func.__name__ + " in " + str(run_time) + " secs")
-           return value
-        except Exception as e:
-           print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
-    return wrapper_timer
-
+import functools
+from timeparsingtools import *
 
 @timer
 def convert_shpfile2convexhull(inputshpfile,outputshpfile):
@@ -76,7 +60,7 @@ def add_attribute2shpfile(inputpointsshpfile,attribute = 'LENGTH',attribute_unit
 
 
 @timer
-def add_field2shpfile(inputshpfile,field_name):
+def add_textattribute2shpfile(inputshpfile,field_name):
    """Adds a text field to  the input shpfile
    inputshpfile: (str)
    outputshpfile: (str)"""
@@ -84,6 +68,84 @@ def add_field2shpfile(inputshpfile,field_name):
 
 
 @timer
+def addfieldcode(inputshpfile,field_name,code):
+   add_textattribute2shpfile(inputshpfile,field_name)
+   try:
+          with arcpy.da.UpdateCursor(inputshpfile,field_name) as cursor:
+             for row in cursor:  
+                row[0] = code
+                cursor.updateRow(row)
+   except Exception as identifier:
+      print(identifier)
+      discard_fieldsInshpfile(inputshpfile,field_name)
+
+
+@timer
+def add_longattribute2shpfile(inputshpfile,field_name):
+   """Adds a text field to  the input shpfile
+   inputshpfile: (str)
+   field_name: (str)"""
+   arcpy.AddField_management(inputshpfile,field_name,"LONG", "", "", "", "", "", "", "")
+
+
+@timer
+def add_idfield2shpfile(inputshpfile,field_name):
+    add_longattribute2shpfile(inputshpfile,field_name)
+    def add_increasingint():  
+        try:
+            #nr_max = arcpy.GetCount_management(pontos_shpfile).getOutput(0)-1
+            with arcpy.da.UpdateCursor(inputshpfile,field_name) as cursor:
+                count = 0
+                for row in cursor:
+                    row[0] = count
+                    count+=1
+                    cursor.updateRow(row)
+        except Exception as e:
+            print(e)
+    add_increasingint()    
+
+
+@timer
 def set_georeference(inputshpfile,reference):
      arcpy.DefineProjection_management(inputshpfile, arcpy.SpatialReference(reference))
+
+
+#Needs to create an additional file: not worth it
+@timer
+def sort_shpfilebyidfield(inputshpfile,outputshpfile,intfield,desc=False):
+    if desc:
+        arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "DESCENDING"]])
+    else:
+        arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "ASCENDING"]])
+
+
+@timer
+def list_fieldsInshpfile(shpfile):
+    fields_list = [field.name for field in arcpy.ListFields(shpfile)]
+    return fields_list
+
+@timer
+def discard_fieldsInshpfile(inputshpfile,fieldstrings_list):
+    arcpy.DeleteField_management(inputshpfile,fieldstrings_list)
+
+
+@timer
+def keep_fieldsInshpfile(inputshpfile,fieldstrings_list):
+    fields_to_discard = [field for field in list_fieldsInshpfile(inputshpfile) if field not in fieldstrings_list]
+    arcpy.DeleteField_management(inputshpfile,fields_to_discard)
+
+
+#Only works if the table is registered within a geo database. 
+#No need to complicate
+#@timer
+#def func(shpfile,field_name_list,sorter="ORDER BY intfield DESC",*args):
+#    try:
+#        #nr_max = arcpy.GetCount_management(pontos_shpfile).getOutput(0)-1
+#        with arcpy.da.UpdateCursor(shpfile,field_name_list,sql_clause = sorter) as cursor:
+#            for row in cursor:
+#                print(row)
+#    except Exception as e:
+#        print('Raised error ocurred at store_table_as_list')
+#        print(e)
+
 

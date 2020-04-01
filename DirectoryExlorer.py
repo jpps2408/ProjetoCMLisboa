@@ -2,6 +2,8 @@ import os
 from DictionaryInstantiator import *
 from ShiftDirClass import *
 
+import functools
+
 class CircuitDir(object):
 
     
@@ -65,7 +67,7 @@ class CircuitDir(object):
                {
                   "namestandard": "CommonPolygons",
                   "alias": "CommonPolygons",
-                  "filesystem": {"CommonPolygons.shp":"aliasCommonPolygons.shp"},
+                  "filesystem": None,
                   "children" : None},
 
                 
@@ -107,14 +109,23 @@ class CircuitDir(object):
 
         circuitpathsobject = DictionaryExplorer(self.pardir)
         self.circuitpaths = circuitpathsobject.recursive_dictglobalexplorer(CIRCUITJSONDIR)
-    
+        self.zone_classification = {
+                       'GARAGE':'garagem',
+                       'CIRCUIT':'recolha',
+                       'UNLOADING':'descarga',
+                       'CONNECTION':'ligacao',
+                       'CODE_FIELD_NAME':'ZONA'}
+
+
     def getRealizacoesToDo(self):
         path = self.circuitpaths['CircuitName']['CircuitVoyages']['ToDo']['path']
         return [os.path.join(path,round) for round in os.listdir(path)]
 
+
     def getRealizacoesDoNe(self):
         path = self.circuitpaths['CircuitName']['CircuitVoyages']['DoNe']['path']
         return [os.path.join(path,round) for round in os.listdir(path)]
+
 
     def ProcessRealizacoesToDo():
         roundlist = getRealizacoesToDo()
@@ -122,10 +133,38 @@ class CircuitDir(object):
             Shift = ShiftDir(shift)
             Shift.GenerateResults()
 
+
     def ProcessRealizacoesDoNe(self):
         roundlist = getRealizacoesDoNe()
         for shift in roundlist:
             Shift = ShiftDir(shift)
             Shift.GenerateResults()
+
+    
+    def make_CircuitArea(self):
+        Points = self.circuitpaths['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"]
+        Area = self.circuitpaths['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"]
+        convert_shpfile2convexhull(Points,Area)
+    
+    def make_CircuitBuffer(self,ringdistance):
+        Area = self.circuitpaths['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"]
+        make_CircuitArea(self)
+        CommonPolygons = self.circuitpaths['CircuitPolygons']['CommonPolygons']['path']
+        CircuitPolygons_Name = "MergedPolygons_" + str(ringdistance)
+        Buffered_CircuitArea = os.path.join(CommonPolygons, CircuitPolygons_Name)
+        
+
+    def classify_polygonshpfiles(self):
+        addfieldcode(self.circuitpaths['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"], 
+                     self.zone_classification['CODE_FIELD_NAME'],self.zone_classification['CIRCUIT'])
+
+        addfieldcode(self.circuitpaths['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"], 
+                     self.zone_classification['CODE_FIELD_NAME'],self.zone_classification['GARAGE'])
+
+        addfieldcode(self.circuitpaths['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"], 
+                     self.zone_classification['CODE_FIELD_NAME'],self.zone_classification['UNLOADING'])
+
+    
+
 
 

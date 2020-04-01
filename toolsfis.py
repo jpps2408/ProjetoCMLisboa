@@ -1,23 +1,8 @@
 import os
-import toolsgis
+from timeparsingtools import *
+from toolsgis import *
 import geopandas as gpd
 import fiona as fi
-
-
-def timer(func):
-    """Print the runtime of the decorated function"""
-    @functools.wraps(func)
-    def wrapper_timer(*args, **kwargs):
-        try:
-           start_time = time.time()    # 1
-           value = func(*args,**kwargs)
-           end_time = time.time()      # 2
-           run_time = end_time - start_time    # 3
-           print("Finished " + func.__name__ + " in " + str(run_time) + " secs")
-           return value
-        except Exception as e:
-           print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
-    return wrapper_timer
 
 
 GeoReferences =  {

@@ -22,8 +22,16 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DictionaryInstantiator.py" />
     <Compile Include="DirectoryExlorer.py" />
+    <Compile Include="display.py" />
+    <Compile Include="MergedDirClass.py" />
+    <Compile Include="module6.py" />
     <Compile Include="ProjetoMunLis.py" />
+    <Compile Include="ShiftDirClass.py" />
+    <Compile Include="timeparsingtools.py" />
+    <Compile Include="toolsfis.py" />
+    <Compile Include="toolsgis.py" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="..\..\CarTrack\Programs\WorkflowAutomationEnvironment\">
