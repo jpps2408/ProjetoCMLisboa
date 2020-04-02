@@ -26,25 +26,6 @@ def tinterval_string(timediff):
     return timediff_string
 
 
-def Cartrack2Time(descriptionstring,splitsep):
-    try:
-        #These are hardocded values: 4th place in the list, oly after the 6th character
-        string_list = descriptionstring.split(splitsep)
-        time_string_1 = [string for string in string_list if 'Time' in string]
-        time_string = time_string_1[0][6:]
-        dtime_string = time_string[0:-3]
-        datetime_obj = string2datetime(dtime_string)
-
-        offset_string = time_string[-2:]
-        #convert the time offset string to a timedelta object
-        offset_obj = datetime.timedelta(hours=int(offset_string))
-
-        #offset the time based on the +00 or +01 part of the string, so as to make times with different offsets comparables
-        time_convertible = datetime_obj + offset_obj
-    
-    except exception as identifier:
-       print('\n exception at Cartrack2Time')
-    return time_convertible
-
 def tintervalns2hour(nstime):
     return nstime.total_seconds()/3600
+

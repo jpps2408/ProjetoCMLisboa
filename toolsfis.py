@@ -77,3 +77,11 @@ def convert_kmlfilesinkmlfolder(kmlfolderabsolutepath,shpfolderabsolutepath):
 def merge_shpfilesinshpfolder(shpsplitfolderabsolutepath,shpconvertedfileabsolutepath):
     shpfiles_list = getfilesinpath(shpsplitfolderabsolutepath,".shp")
     merge_polygons(shpfiles_list,shpconvertedfileabsolutepath)
+
+
+
+def replace_bymatchorkeep(match_str,old_str,new_str):    
+    if old_str == match_str:
+        return new_str
+    else:
+        return old_str

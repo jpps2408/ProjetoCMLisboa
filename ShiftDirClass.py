@@ -7,6 +7,14 @@ import shutil as sh
 
 class ShiftDir(object):
 
+    
+    Cartrack = {"SplitSep":'<br></br>',
+                "CarTrackTimeFieldName":"Time: ",
+                "TimeStampWithoutUTCOffset": (6,24),
+                "UTCOffset": (26,27)}
+    Field_Names_Points = {"Delete":["Name","TARGET_FID","Join_Count","Id","ORIG_FID"],
+                          "Incrementing_Int":"SERIAL"}
+
 
     def __init__(self, rounddirectory, CircuitDir ,*args, **kwargs):
             self.processedpolygonspaths = CircuitDir.ProcessedPolygon.processedpolygonspaths
@@ -137,18 +145,78 @@ class ShiftDir(object):
     
         
     
+    @timer    
+    def parse_field(self):
+
+        id_field = self.Field_Names_Points["Incrementing_Int"]
+        convoluted_field = "descrp"
+        timestamp_field = "timestamp"
+        ligacao_str = self.zone_classification['CONNECTION']
+        zone_field = self.zone_classification['CODE_FIELD_NAME']
+
+        field_names = [id_field,convoluted_field,timestamp_field,zone_field]
+
+        pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
+        pointsparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["filepathdicts"]["Points_Parsed_ZoneGraded.shp"]
+        copy_directory(pointsnotparsedzonegraded,pointsparsedzonegraded)
+
+        self.transitions = []
+        previous_transition = ""
+        with arcpy.da.UpdateCursor(pointsparsedzonegraded,field_names) as cursor:
+           for row in cursor:  
+              row[field_names.index(zone_field)] = self._replace_emptyspacewithligacao(row[field_names.index(zone_field)],ligacao_str)
+              row[field_names.index(timestamp_field)] = self._Cartrack2Time(row[field_names.index(convoluted_field)])
+              current_transition = row[field_names.index(zone_field)]
+              if self._get_transition(previous_transition,current_transition):
+                  previous_transition = current_transition
+              cursor.updateRow(row)    
+        
+    @timer
+    def _get_transition(previous_string,current_string):
+        if previous_string != previous_string:
+            return True
+        else:
+            return False
+
+    @timer
+    def _Cartrack2Time(descriptionstring):
+        #These are hardocded values: 4th place in the list, oly after the 6th character
+        splitsep_str= self.Cartrack["SplitSep"]
+        Cartrackfield_str = self.Cartrack["CarTrackTimeFieldName"] 
+        string_list = descriptionstring.split(splitsep)
+        time_string_1 = [string for string in string_list if Cartrackfield_str in string]
+
+        dtime_string = time_string_1[0][self.Cartrack["TimeStampWithoutUTCOffset"][0]:self.Cartrack["TimeStampWithoutUTCOffset"][1]]
+        offset_string = time_string_1[0][self.Cartrack["UTCOffset"][0]:self.Cartrack["UTCOffset"][1]]
+
+        #convert the time offset string to a timedelta object
+        offset_obj = datetime.timedelta(hours=int(offset_string))
+        datetime_obj = string2datetime(dtime_string)
+
+        #offset the time based on the +00 or +01 part of the string, so as to make times with different offsets comparables
+        time_convertible = datetime_obj + offset_obj
+        return time_convertible
+
+
+    def _replace_emptyspacewithligacao(self,fieldzone_value,code_value):
+        return replace_bymatchorkeep(" ",fieldzone_value, code_value)
+
+
+
 
     def join_pointswithpolygon(self):
         self._copy_mergedppolygon()
         points = self.shiftpaths["ShiftName"]["SHP"]["SHPmerged"]["filepathdicts"]["SHPmerged.shp"]
         polygon = self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["filepathdicts"]["CircuitPolygon.shp"]
 
-        pointszonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
-        spatialjoin_shpfiles(points,polygon,pointszonegraded)
-        deletefieldnames = ["Name","TARGET_FID","Join_Count","Id","ORIG_FID"]
-        discard_fieldsInshpfile(pointszonegraded,deletefieldnames)
+        pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
+        spatialjoin_shpfiles(points,polygon,pointsnotparsedzonegraded)
+        deletefieldnames = self.Field_Names_Points["Delete"]
+        discard_fieldsInshpfile(pointsnotparsedzonegraded,deletefieldnames)
+        add_idfield2shpfile(pointsnotparsedzonegraded,self.Field_Names_Points["Incrementing_Int"])
     
-    
+
+
 
     def _copy_mergedppolygon(self):
         self._convert_kml2shp()
@@ -163,8 +231,6 @@ class ShiftDir(object):
         mergedshp_file= self.shiftpaths["ShiftName"]["SHP"]["SHPmerged"]["filepathdicts"]["SHPmerged.shp"]
         convert_kmlfilesinkmlfolder(kml_folder,splitshp_folder)
         merge_shpfilesinshpfolder(splitshp_folder,mergedshp_file)
-        deletefieldnames= ["Name"]
-        discard_fieldsInshpfile(mergedshp_file,deletefieldnames)
 
         
 
