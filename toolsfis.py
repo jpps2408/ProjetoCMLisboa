@@ -1,5 +1,6 @@
 import os
-from timeparsingtools import *
+from ostools import *
+from timeparsingtools import * 
 from toolsgis import *
 import geopandas as gpd
 import fiona as fi
@@ -12,7 +13,7 @@ GeoReferences =  {
       }
 
 
-@timer
+
 def fi_intialization():
     fi.drvsupport.supported_drivers['libkml'] = 'rw' # enable KML support which is disabled by default
     fi.drvsupport.supported_drivers['LIBKML'] = 'rw'
@@ -30,6 +31,8 @@ def kml2shp(kml_file,shp_file):
 
     '''
     try:
+        fi_intialization()
+
         mygpd = gpd.read_file(kml_file)
 
         #Spatial reference for Portugal
@@ -57,3 +60,20 @@ def kml2shp(kml_file,shp_file):
 
 
 
+@timer
+def convert_kmlfilesinkmlfolder(kmlfolderabsolutepath,shpfolderabsolutepath):
+    kmlfile_list = getfilesinpath(kmlfolderabsolutepath,extension=".kml")
+    shpfile_list = []
+    if kmlfile_list:
+        for kmlfilepath_str in kmlfile_list:
+            shpfilename_str = os.path.splitext(os.path.basename(kmlfilepath_str))[0] + ".shp"
+            shpfilepath_str = os.path.join(shpfolderabsolutepath,shpfilename_str)
+            kml2shp(kmlfilepath_str,shpfilepath_str)
+            shpfile_list.append(shpfilepath_str)
+    return shpfile_list
+
+
+@timer
+def merge_shpfilesinshpfolder(shpsplitfolderabsolutepath,shpconvertedfileabsolutepath):
+    shpfiles_list = getfilesinpath(shpsplitfolderabsolutepath,".shp")
+    merge_polygons(shpfiles_list,shpconvertedfileabsolutepath)

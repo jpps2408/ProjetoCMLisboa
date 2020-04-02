@@ -1,15 +1,23 @@
+import os
+import ostools
 import arcpy
 import time
 import functools
+from ostools import *
 from timeparsingtools import *
+arcpy.env.overwriteOutput = True
+
+
 
 @timer
 def convert_shpfile2convexhull(inputshpfile,outputshpfile):
    """Converts the shpfile containing the points into a convex hull polygon
    inputshpfile: (str)
    outputshpfile: (str)"""
+   
    arcpy.management.MinimumBoundingGeometry(inputshpfile, outputshpfile, 
-                                             "CONVEX_HULL", "ALL")
+                                                     "CONVEX_HULL", "ALL")
+ 
 
 
 @timer
@@ -18,7 +26,7 @@ def buffer_shpfiles(inputshpfile,outputshpfile,buffersize):
    inputshpfile: (str)
    outputshpfile: (str)
    buffersize: (int)"""
-   arcpy.analysis.Buffer(inputshpfile,outputshpfile,str(buffersize) + ' METERS', "FULL", "ROUND", "LIST")   
+   arcpy.analysis.Buffer(inputshpfile,outputshpfile,str(buffersize) + ' METERS', "FULL", "ROUND", "NONE")   
 
 
 @timer
@@ -71,12 +79,12 @@ def add_textattribute2shpfile(inputshpfile,field_name):
 def addfieldcode(inputshpfile,field_name,code):
    add_textattribute2shpfile(inputshpfile,field_name)
    try:
-          with arcpy.da.UpdateCursor(inputshpfile,field_name) as cursor:
-             for row in cursor:  
-                row[0] = code
-                cursor.updateRow(row)
-   except Exception as identifier:
-      print(identifier)
+      with arcpy.da.UpdateCursor(inputshpfile,field_name) as cursor:
+         for row in cursor:  
+             row[0] = code
+             cursor.updateRow(row)
+   except Exception as e:
+      print(e)
       discard_fieldsInshpfile(inputshpfile,field_name)
 
 
@@ -129,10 +137,69 @@ def discard_fieldsInshpfile(inputshpfile,fieldstrings_list):
     arcpy.DeleteField_management(inputshpfile,fieldstrings_list)
 
 
-@timer
-def keep_fieldsInshpfile(inputshpfile,fieldstrings_list):
-    fields_to_discard = [field for field in list_fieldsInshpfile(inputshpfile) if field not in fieldstrings_list]
-    arcpy.DeleteField_management(inputshpfile,fields_to_discard)
+
+
+
+
+
+
+
+
+#For this project:
+
+def convert_prspoints2prsarea(pointsshpfile,unbufferedareashpfile):
+   """Converts the shpfile containing the points into a convex hull polygon
+   inputshpfile: (str)
+   outputshpfile: (str)"""
+   if not os.path.exists(unbufferedareashpfile):
+      convert_shpfile2convexhull(pointsshpfile,unbufferedareashpfile)
+   else:
+      print("\nThere is already a file: {} \n at the folder:\n {} \n\n".format(os.path.basename(unbufferedareashpfile),os.path.join(unbufferedareashpfile,os.path.pardir)))
+
+
+def buffer_prsarea(unbufferedareashpfile,bufferedareashpfile,buffersize):
+   """Creates a buffer for the input polygon with the specified buffer size and creates a output shp file
+   inputshpfile: (str)
+   outputshpfile: (str)
+   buffersize: (int)"""
+   if not os.path.exists(bufferedareashpfile):
+      buffer_shpfiles(unbufferedareashpfile,bufferedareashpfile,buffersize)
+   else:
+      print("There is already a file: {} \n at the folder:\n {} \n\n".format(os.path.basename(bufferedareashpfile),os.path.join(bufferedareashpfile,os.path.pardir)))
+
+
+def merge_polygons(inputpolygon_list,outputsinglepolygon):
+   if not os.path.exists(outputsinglepolygon):
+     merge_shpfiles(inputpolygon_list,outputsinglepolygon)
+   else:
+      print("There is already a file: {} \n at the folder:\n {} \n\n".format(os.path.basename(outputsinglepolygon),os.path.join(outputsinglepolygon,os.path.pardir)))
+
+   
+      
+
+
+
+def update_table_cursor_local(shpfile,field_name_list,inside_func,**adaptive):
+   '''
+   Function that will update the table row by row by using an Update Cursor Object
+
+   Args:
+      shpfile (str): path to shape file whose table will be updated
+      field_name_list (:type: list of str): list of field names strings that will be collected from the shapefile table
+      inside_func (a function): function that will do the inner processing
+
+      
+   '''
+   with arcpy.da.UpdateCursor(shpfile,field_name_list) as cursor:
+      for row in cursor:
+         try:
+            row = inside_func(row,field_name_list,**adaptive)
+         except Exception as identifier:
+            print('Ooops, something went wrong at update_table')
+         cursor.updateRow(row)     
+
+
+
 
 
 #Only works if the table is registered within a geo database. 

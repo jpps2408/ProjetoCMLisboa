@@ -1,18 +1,24 @@
 import os
 from DictionaryInstantiator import *
+from DirectoryExlorer import *
 import toolsgis
-import toolsfis
-
+from toolsfis import *
+import shutil as sh
 
 class ShiftDir(object):
 
 
-    def __init__(self, rounddirectory, *args, **kwargs):
+    def __init__(self, rounddirectory, CircuitDir ,*args, **kwargs):
+            self.processedpolygonspaths = CircuitDir.ProcessedPolygon.processedpolygonspaths
+            self.circuitobject = CircuitDir
+            self.zone_classification = CircuitDir.zone_classification
             self.shiftdirectory = os.path.abspath(rounddirectory)
             self.shift = os.path.basename(self.shiftdirectory)
             self.pardir = os.path.abspath(os.path.join(rounddirectory,os.path.pardir))
             self.setShiftPaths()
     
+    
+
     def setShiftPaths(self):
 
         shiftJSONDIR = {
@@ -26,74 +32,66 @@ class ShiftDir(object):
             
                {
                 "namestandard": "Products",
-                "alias": "aliasProducts",
+                "alias": "Products",
                 "filesystem": None,
                 "children" : 
                 ########BEGIN Layer 3 #########
                 [
                    {
-                   "namestandard": "CircuitPolygons_Used",
-                   "alias": "aliasMergedCircuitPolygons",
+                   "namestandard": "CircuitPolygon",
+                   "alias": "CircuitPolygon",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"MergedCircuitPolygons.shp":"aliasMergedCircuitPolygons.shp"},
+                   "filesystem": {"CircuitPolygon.shp":"nonexistantCircuitPolygon.shp"},
                    "children" : None},
 
                   {
-                   "namestandard": "Points_Parsed",
-                   "alias": "aliasParsedPoints",
+                   "namestandard": "Points_Parsed_ZoneGraded",
+                   "alias": "Points_Parsed_ZoneCoded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"ParsedPoints.shp":"aliasParsedPoints.shp"},
+                   "filesystem": {"Points_Parsed_ZoneGraded.shp":"Points_Parsed_ZoneCoded.shp"},
                    "children" : None}, 
                   
                   {
-                   "namestandard": "Points_Parsed_Local",
-                   "alias": "aliasPointsByZone",
+                   "namestandard": "Points_NotParsed_ZoneGraded",
+                   "alias": "Points_NotParsed_ZoneCoded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"PointsByZone.shp":"aliasPointsByZone.shp"},
+                   "filesystem": {"Points_NotParsed_ZoneGraded.shp":"Points_NotParsed_ZoneCoded.shp"},
                    "children" : None},
 
                    {
-                   "namestandard": "PointsTransition",
-                   "alias": "aliasTransitionPoints",
+                   "namestandard": "Transitions",
+                   "alias": "Transitions",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"TransitionPoints.shp":"aliasTransitionPoints.shp"},
+                   "filesystem": {"Transitions.csv":"Transitions.csv"},
                    "children" : None},
 
                    {
-                   "namestandard": "Points_Parsed_Transitioned",
-                   "alias": "aliasPointsByZone",
+                   "namestandard": "Points_Parsed_TransitionGraded",
+                   "alias": "Points_Parsed_TransitionCoded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"PointsByZone.shp":"aliasPointsByZone.shp"},
+                   "filesystem": {"Points_Parsed_TransitionGraded.shp":"Points_Parsed_TransitionCoded.shp"},
                    "children" : None},
                   
                   {
-                   "namestandard": "Line_Default",
-                   "alias": "aliasLine_Default",
+                   "namestandard": "Line_Merged_TransitionGraded",
+                   "alias": "Line_Merged_TransitionGraded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Default.shp":"aliasLine_Default.shp"},
+                   "filesystem": {"Line_Merged_TransitionGraded.shp":"Line_Merged_TransitionGraded.shp"},
                    "children" : None},
 
                  
                    {
-                   "namestandard": "Line_Split",
-                   "alias": "aliasLine_Split",
+                   "namestandard": "Line_Splitted_TransitionGraded",
+                   "alias": "Line_Splitted_TransitionGraded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Split.shp":"aliasLine_Split.shp"},
+                   "filesystem": {"Line_Splitted_TransitionGraded.shp":"Line_Splitted_TransitionGraded.shp"},
                    "children" : None},
-
-
-                  {
-                   "namestandard": "Line_Split_Graded",
-                   "alias": "aliasLine_Split_Graded",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Split_Graded.shp":"aliasLine_Split_Graded.shp"},
-                   "children" : None},
-                                      
+                                                         
                   {
                    "namestandard": "Circuit_Near_Line",
-                   "alias": "CircuitPointsNearLinealias",
+                   "alias": "Circuit_Near_Line",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"CircuitPointsNearLine.shp":"aliasCircuitPointsNearLine.shp"},
+                   "filesystem": {"Circuit_Near_Line.shp":"Circuit_Near_Line.shp"},
                    "children" : None}]
                    
                 ########END Layer 3 #########
@@ -101,18 +99,30 @@ class ShiftDir(object):
 
                {
                   "namestandard": "KML",
-                  "alias": "aliasKML",
-                  "filesystem": {"SHP.shp":"aliasSHP.shp"},
+                  "alias": "KML",
+                  "filesystem": None,
                   "children" : None},
                {
                   "namestandard": "SHP",
-                  "alias": "aliasSHP",
-                  "filesystem": {"SHP.shp":"aliasSHP.shp"},
+                  "alias": "SHP",
+                  "filesystem": None,
+                  "children" : [
+                      {
+                  "namestandard": "SHPsplit",
+                  "alias": "SHPsplit",
+                  "filesystem": None,
                   "children" : None},
+                  {
+                  "namestandard": "SHPmerged",
+                  "alias": "SHPmerged",
+                  "filesystem": {"SHPmerged.shp":"SHPmerged.shp"},
+                  "children" : None}
+                  ]},
+
                {
                   "namestandard": "ReportAnalysis",
-                  "alias": "CommonPolygons",
-                  "filesystem": {"CommonPolygons.shp":"aliasCommonPolygons.shp"},
+                  "alias": "ReportAnalysis",
+                  "filesystem": None,
                   "children" : None}
 
                   ]
@@ -123,7 +133,43 @@ class ShiftDir(object):
 
         shiftpathsobject = DictionaryExplorer(self.pardir)
         self.shiftpaths = shiftpathsobject.recursive_dictglobalexplorer(shiftJSONDIR)
+        
     
+        
+    
+
+    def join_pointswithpolygon(self):
+        self._copy_mergedppolygon()
+        points = self.shiftpaths["ShiftName"]["SHP"]["SHPmerged"]["filepathdicts"]["SHPmerged.shp"]
+        polygon = self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["filepathdicts"]["CircuitPolygon.shp"]
+
+        pointszonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
+        spatialjoin_shpfiles(points,polygon,pointszonegraded)
+        deletefieldnames = ["Name","TARGET_FID","Join_Count","Id","ORIG_FID"]
+        discard_fieldsInshpfile(pointszonegraded,deletefieldnames)
+    
+    
+
+    def _copy_mergedppolygon(self):
+        self._convert_kml2shp()
+        copy_directory(self.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["path"],self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["path"])
+        file_list = getfilesinpath(self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["path"],".shp")
+        self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["filepathdicts"]["CircuitPolygon.shp"] = file_list[0]
+
+
+    def _convert_kml2shp(self):
+        kml_folder = self.shiftpaths["ShiftName"]["KML"]["path"]
+        splitshp_folder = self.shiftpaths["ShiftName"]["SHP"]["SHPsplit"]["path"]
+        mergedshp_file= self.shiftpaths["ShiftName"]["SHP"]["SHPmerged"]["filepathdicts"]["SHPmerged.shp"]
+        convert_kmlfilesinkmlfolder(kml_folder,splitshp_folder)
+        merge_shpfilesinshpfolder(splitshp_folder,mergedshp_file)
+        deletefieldnames= ["Name"]
+        discard_fieldsInshpfile(mergedshp_file,deletefieldnames)
+
+        
+
+    
+
     def GenerateResults():
         print("")
 

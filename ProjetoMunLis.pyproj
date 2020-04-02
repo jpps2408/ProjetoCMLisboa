@@ -25,7 +25,7 @@
     <Compile Include="DictionaryInstantiator.py" />
     <Compile Include="DirectoryExlorer.py" />
     <Compile Include="display.py" />
-    <Compile Include="MergedDirClass.py" />
+    <Compile Include="ProcessedPolygonsDirClass.py" />
     <Compile Include="module6.py" />
     <Compile Include="ProjetoMunLis.py" />
     <Compile Include="ShiftDirClass.py" />
