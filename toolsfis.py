@@ -81,39 +81,7 @@ def merge_shpfilesinshpfolder(shpsplitfolderabsolutepath,shpconvertedfileabsolut
 
 
 
-@timer
-def rename_files(dir,old,new):
-    for file in os.listdir(dir):
-        basename,fileextension = os.path.splitext(os.path.basename(file))
-        cumulative_fileextension = fileextension
-        while not fileextension=="":
-            basename,fileextension = os.path.splitext(os.path.basename(basename))
-            cumulative_fileextension=fileextension+cumulative_fileextension
-        if basename == old and cumulative_fileextension in shpfile_filetypes:
-            
-            old_path = os.path.abspath(os.path.join(dir,file))
-            new_path = os.path.abspath(os.path.join(dir,new+cumulative_fileextension))
-            if not os.path.exists(new_path):
-                os.rename(old_path,new_path)
-            else:
-                os.remove(old_path)
 
-@signal
-def replace_bymatchorkeep(match_str,old_str,new_str):    
-    if old_str == match_str:
-        return new_str
-    else:
-        return old_str
-
-@signal
-def get_transition(previous_string,current_string):
-        if previous_string != previous_string:
-            return True
-        else:
-            return False
-@signal 
-def replace_emptyspacewithligacao(fieldzone_value,code_value):
-        return replace_bymatchorkeep(" ",fieldzone_value, code_value)
 
 #@timer
 #def rename_filesv1(dir,old,new):

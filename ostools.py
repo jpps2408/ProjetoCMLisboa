@@ -12,7 +12,7 @@ def timer(func,*args, **kwargs):
            value = func(*args,**kwargs)
            end_time = time.time()      # 2
            run_time = end_time - start_time    # 3
-           print("Finished " + func.__name__ + " in " + str(run_time) + " secs")
+           print("Finished " + func.__name__ + " in " + str(run_time) + " secs\n")
            return value
         except Exception as e:
            print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
@@ -29,6 +29,8 @@ def signal(func,*args, **kwargs):
            print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
     return wrapper_timer
 
+
+@signal
 def check_fileextension(file,extension):
     if os.path.splitext(file)[1] == extension:
         return True
@@ -36,7 +38,7 @@ def check_fileextension(file,extension):
         return False
 
 
-@timer
+@signal
 def getfilesinpath(inpath,extension="*"):
     '''
     Lists all files in a directory
@@ -60,7 +62,37 @@ def getfilesinpath(inpath,extension="*"):
     return filesinpath
 
 
-@timer
+@signal
 def copy_directory(src,dest):
     copy_tree(src,dest)
 
+@signal
+def rename_shpfiles(dir,old,new,shpfile_filetypes = set((".cpg",".dbf",".prj",".sbn",".sbx",".shp",".shp.xml","xml",".shx",".accdb"))):
+    for file in os.listdir(dir):
+        basename,fileextension = os.path.splitext(os.path.basename(file))
+        cumulative_fileextension = fileextension
+        while not fileextension=="":
+            basename,fileextension = os.path.splitext(os.path.basename(basename))
+            cumulative_fileextension=fileextension+cumulative_fileextension
+        if basename == old and cumulative_fileextension in shpfile_filetypes:
+            
+            old_path = os.path.abspath(os.path.join(dir,file))
+            new_path = os.path.abspath(os.path.join(dir,new+cumulative_fileextension))
+            if not os.path.exists(new_path):
+                os.rename(old_path,new_path)
+            else:
+                os.remove(old_path)
+
+@signal
+def replace_bymatchorkeep(match_str,old_str,new_str):    
+    if old_str == match_str:
+        return new_str
+    else:
+        return old_str
+
+@signal
+def get_transition(previous_string,current_string):
+        if previous_string != current_string:
+            return True
+        else:
+            return False

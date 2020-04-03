@@ -8,10 +8,7 @@ import shutil as sh
 class ShiftDir(object):
 
     
-    Cartrack = {"SplitSep":'<br></br>',
-                "CarTrackTimeFieldName":"Time: ",
-                "TimeStampWithoutUTCOffset": (6,24),
-                "UTCOffset": (26,27)}
+    
     Field_Names_Points = {"Delete":["Name","TARGET_FID","Join_Count","Id","ORIG_FID"],
                           "Incrementing_Int":"SERIAL"}
 
@@ -26,7 +23,7 @@ class ShiftDir(object):
             self.setShiftPaths()
     
     
-
+    @signal
     def setShiftPaths(self):
 
         shiftJSONDIR = {
@@ -148,47 +145,58 @@ class ShiftDir(object):
     @timer    
     def parse_field(self):
 
-        id_field = self.Field_Names_Points["Incrementing_Int"]
+        number_field = self.Field_Names_Points["Incrementing_Int"]
         singlestring_field = "descrp"
-        timestamp_field = "timestamp"
         ligacao_str = self.zone_classification['CONNECTION']
         zone_field = self.zone_classification['CODE_FIELD_NAME']
 
-        field_names = [id_field,singlestring_field,timestamp_field,zone_field]
+        field_names = [number_field,singlestring_field,"timestamp",zone_field]
         copy_directory(self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["path"],self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"])
 
         pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
         pointsparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["filepathdicts"]["Points_Parsed_ZoneGraded.shp"]
 
-        rename_files(self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"],
+        rename_shpfiles(self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"],
                      os.path.splitext(os.path.basename(pointsnotparsedzonegraded))[0],
                      os.path.splitext(os.path.basename(pointsparsedzonegraded))[0])
+        
 
               
         self.transitions = []
         previous_transition = ""
         with arcpy.da.UpdateCursor(pointsparsedzonegraded,field_names) as cursor:
-           for row in cursor:  
-              row[field_names.index(zone_field)] = replace_emptyspacewithligacao(row[field_names.index(zone_field)],ligacao_str)
-              row[field_names.index(timestamp_field)] = self._Cartrack2Time(row[field_names.index(singlestring_field)])
+           for row in cursor:
+              prev_row = row
+              row[field_names.index("timestamp")] = self._Cartrack2Time(row[field_names.index(singlestring_field)]) 
+              current_row_int = row[field_names.index(number_field)]
               current_transition = row[field_names.index(zone_field)]
-              if not get_transition(previous_transition,current_transition):
+              row[field_names.index(zone_field)] = self.replace_emptyspacewithligacao(current_transition,ligacao_str)
+              if get_transition(previous_transition,current_transition):
                   previous_transition = current_transition
-                  self.transitions.append(row)
-              cursor.updateRow(row)    
-        
+                  self.transitions.append([row[field_names.index("timestamp")],row[field_names.index(zone_field)],row[field_names.index(number_field)]])
+              row[field_names.index("timestamp")] = datetime2string(row[field_names.index("timestamp")])
+              cursor.updateRow(row)
+        print(self.transitions)
+     
+    @signal 
+    def replace_emptyspacewithligacao(fieldzone_value,code_value):
+            return replace_bymatchorkeep(" ",fieldzone_value, code_value)     
 
 
     @signal
     def _Cartrack2Time(self,descriptionstring):
+        Cartrack = {"SplitSep":'<br></br>',
+                "CarTrackTimeFieldName":"Time: ",
+                "TimeStampWithoutUTCOffset": (6,25),
+                "UTCOffset": (26,28)}
         #These are hardocded values: 4th place in the list, oly after the 6th character
-        splitsep_str= self.Cartrack["SplitSep"]
-        Cartrackfield_str = self.Cartrack["CarTrackTimeFieldName"] 
+        splitsep_str= Cartrack["SplitSep"]
+        Cartrackfield_str = Cartrack["CarTrackTimeFieldName"] 
         string_list = descriptionstring.split(splitsep_str)
         time_string_1 = [string for string in string_list if Cartrackfield_str in string]
+        dtime_string = time_string_1[0][Cartrack["TimeStampWithoutUTCOffset"][0]:Cartrack["TimeStampWithoutUTCOffset"][1]]
 
-        dtime_string = time_string_1[0][self.Cartrack["TimeStampWithoutUTCOffset"][0]:self.Cartrack["TimeStampWithoutUTCOffset"][1]]
-        offset_string = time_string_1[0][self.Cartrack["UTCOffset"][0]:self.Cartrack["UTCOffset"][1]]
+        offset_string = time_string_1[0][Cartrack["UTCOffset"][0]:Cartrack["UTCOffset"][1]]
 
         #convert the time offset string to a timedelta object
         offset_obj = datetime.timedelta(hours=int(offset_string))
@@ -203,7 +211,7 @@ class ShiftDir(object):
 
 
 
-
+    @signal
     def join_pointswithpolygon(self):
         self._copy_mergedppolygon()
         points = self.shiftpaths["ShiftName"]["SHP"]["SHPmerged"]["filepathdicts"]["SHPmerged.shp"]
@@ -217,7 +225,7 @@ class ShiftDir(object):
     
 
 
-
+    @signal
     def _copy_mergedppolygon(self):
         self._convert_kml2shp()
         copy_directory(self.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["path"],self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["path"])
@@ -225,7 +233,7 @@ class ShiftDir(object):
         new_basename,_ = os.path.splitext(os.path.basename(self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["filepathdicts"]["CircuitPolygon.shp"]))
         rename_files(self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["path"],old_basename,new_basename)
 
-
+    @signal
     def _convert_kml2shp(self):
         kml_folder = self.shiftpaths["ShiftName"]["KML"]["path"]
         splitshp_folder = self.shiftpaths["ShiftName"]["SHP"]["SHPsplit"]["path"]
