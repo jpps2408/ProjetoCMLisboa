@@ -200,7 +200,7 @@ def update_table_cursor_local(shpfile,field_name_list,inside_func,**adaptive):
 
 
 
-
+shpfile_filetypes = set((".cpg",".dbf",".prj",".sbn",".sbx",".shp",".shp.xml","xml",".shx"))
 
 #Only works if the table is registered within a geo database. 
 #No need to complicate

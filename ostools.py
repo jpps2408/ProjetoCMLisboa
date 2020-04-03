@@ -18,7 +18,16 @@ def timer(func,*args, **kwargs):
            print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
     return wrapper_timer
 
-
+def signal(func,*args, **kwargs):
+    """Print the runtime of the decorated function"""
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        try:
+           value = func(*args,**kwargs)
+           return value
+        except Exception as e:
+           print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
+    return wrapper_timer
 
 def check_fileextension(file,extension):
     if os.path.splitext(file)[1] == extension:

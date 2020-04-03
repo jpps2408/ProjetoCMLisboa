@@ -46,13 +46,14 @@ from timeparsingtools import *
 #
 
 
-#circuit_folder = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104"
-#circuit_object = CD.CircuitDir(circuit_folder)
-#circuit_object.make_CircuitPolygon(50)
+circuit_folder = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104"
+circuit_object = CD.CircuitDir(circuit_folder)
+circuit_object.make_CircuitPolygon(50)
 
-#realizacao = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2"
-#shift = ShiftDir(realizacao,circuit_object)
-#shift.join_pointswithpolygon()
+realizacao = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2"
+shift = ShiftDir(realizacao,circuit_object)
+shift.join_pointswithpolygon()
+shift.parse_field()
 #print("")
 ######################################################
 ################## ##################
