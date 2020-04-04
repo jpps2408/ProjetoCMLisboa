@@ -8,19 +8,42 @@ import shutil as sh
 class ShiftDir(object):
 
     
+    Cartrack = {"SplitSep":'<br></br>',
+                "CarTrackTimeFieldName":"Time: ",
+                "TimeStampWithoutUTCOffset": (6,25),
+                "UTCOffset": (26,28)}
+
+    Mission_Codes_Macro = {
+                     "S2P":("G","P"),
+                     "P2P":("P","P"),
+                     "P2C":("P","C"),
+                     "C2C":("C","C"),
+                     "C2P":("C","P"),
+                     "C2T":("C","G")}
+
+
+    Mission_Codes_Micro = {
+                     "S2P":("G","P"),
+                     "P2P":("P","P"),
+                     "P2C":("P","C"),
+                     "C2C":("C","C"),
+                     "C2P":("C","P"),
+                     "C2T":("C","G")}
     
-    Field_Names_Points = {"Delete":["Name","TARGET_FID","Join_Count","Id","ORIG_FID"],
-                          "Incrementing_Int":"SERIAL"}
-
-
-    def __init__(self, rounddirectory, CircuitDir ,*args, **kwargs):
-            self.processedpolygonspaths = CircuitDir.ProcessedPolygon.processedpolygonspaths
-            self.circuitobject = CircuitDir
-            self.zone_classification = CircuitDir.zone_classification
-            self.shiftdirectory = os.path.abspath(rounddirectory)
+    def __init__(self, shiftdirectory, CircuitDirObject ,*args, **kwargs):
+            self.processedpolygonspaths = CircuitDirObject.ProcessedPolygon.processedpolygonspaths
+            self.circuitobject = CircuitDirObject
+            self.zone_classification = CircuitDirObject.zone_classification
+            self.zone_abbreviation = {
+                    self.zone_classification['GARAGE']:"G",
+                    self.zone_classification['CIRCUIT']:"P",
+                    self.zone_classification['UNLOADING']:"D",
+                    self.zone_classification['CONNECTION']:"L"}
+            self.shiftdirectory = os.path.abspath(shiftdirectory)
             self.shift = os.path.basename(self.shiftdirectory)
-            self.pardir = os.path.abspath(os.path.join(rounddirectory,os.path.pardir))
+            self.pardir = os.path.abspath(os.path.join(shiftdirectory,os.path.pardir))
             self.setShiftPaths()
+
     
     
     @signal
@@ -135,68 +158,102 @@ class ShiftDir(object):
            
         ########END Layer 1 #########
         }
+        
+
+        self.Field_Names_Points = {"Delete":["Name","TARGET_FID","Join_Count","Id","ORIG_FID"],
+                              "SERIAL_ID":"SERIAL",
+                              "SINGLESTRING":"descrp",
+                              "TIME":"timestamp",
+                              "ZONE": self.zone_classification["CODE_FIELD_NAME"]}
 
         shiftpathsobject = DictionaryExplorer(self.pardir)
         self.shiftpaths = shiftpathsobject.recursive_dictglobalexplorer(shiftJSONDIR)
+
+
         
-    
+    @timer
+    def process_shift(self):
+        self._join_pointswithpolygon()
+        self._parse_field()
+  
         
-    
+
+
+
+
     @timer    
-    def parse_field(self):
+    def _parse_field(self):
+        #assign fieldnames strings to variables
+        serial_id = self.Field_Names_Points["SERIAL_ID"]
+        singlestring = self.Field_Names_Points["SINGLESTRING"]
+        zone = self.Field_Names_Points["ZONE"]
+        time = "timestamp"
+        field_names = [serial_id,singlestring,time,zone]
 
-        number_field = self.Field_Names_Points["Incrementing_Int"]
-        singlestring_field = "descrp"
+        #assign "connection" code to a variable
         ligacao_str = self.zone_classification['CONNECTION']
-        zone_field = self.zone_classification['CODE_FIELD_NAME']
-
-        field_names = [number_field,singlestring_field,"timestamp",zone_field]
-        copy_directory(self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["path"],self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"])
-
+        
+        
+        #get the two fielpaths to that contains the non parsed points and the parsed poitns
         pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
         pointsparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["filepathdicts"]["Points_Parsed_ZoneGraded.shp"]
-
+        #copy the directory where the non parsed points are
+        copy_directory(self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["path"],self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"])
+        #rename all of the files in the folder (they were copied and need renaming)
         rename_shpfiles(self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"],
                      os.path.splitext(os.path.basename(pointsnotparsedzonegraded))[0],
                      os.path.splitext(os.path.basename(pointsparsedzonegraded))[0])
         
-
-              
-        self.transitions = []
+        #get a transitions dictionary of lists. Note that this is defined inside a class method because if it was
+        #defined outside a class method bu inside a class body, it would be a class variable and hence if we changed 
+        #the instance we were dealing with we would get the same transition lists throughout all of the living objects/instances 
         previous_transition = ""
+        Field_Names_Transitions = {"INI_SERIAL":[],
+                               "FIN_SERIAL":[],
+                               "TIME":[],
+                               "TIMESTAMP":[],
+                               "FLAG":[],
+                               "ZONE":[previous_transition]}
+
+        def update_Field_Names_Transitions(row):
+           Field_Names_Transitions["INI_SERIAL"].append(row[field_names.index(serial_id)])
+           Field_Names_Transitions["TIMESTAMP"].append(string2datetime(row[field_names.index(time)]))
+           Field_Names_Transitions["ZONE"].append(row[field_names.index(zone)])
+        
+
+        
         with arcpy.da.UpdateCursor(pointsparsedzonegraded,field_names) as cursor:
            for row in cursor:
-              prev_row = row
-              row[field_names.index("timestamp")] = self._Cartrack2Time(row[field_names.index(singlestring_field)]) 
-              current_row_int = row[field_names.index(number_field)]
-              current_transition = row[field_names.index(zone_field)]
-              row[field_names.index(zone_field)] = self.replace_emptyspacewithligacao(current_transition,ligacao_str)
+              row[field_names.index("timestamp")] = datetime2string(self._Cartrack2Time(row[field_names.index(singlestring)]))
+              current_row_int = row[field_names.index(serial_id)]
+              current_transition = row[field_names.index(zone)]
+              row[field_names.index(zone)] = self._replace_emptyspacewithligacao(current_transition,ligacao_str)
+
               if get_transition(previous_transition,current_transition):
+                  if previous_transition == Field_Names_Transitions["ZONE"][-1]:
+                     Field_Names_Transitions["FIN_SERIAL"].append(row[field_names.index(serial_id)]-1)
                   previous_transition = current_transition
-                  self.transitions.append([row[field_names.index("timestamp")],row[field_names.index(zone_field)],row[field_names.index(number_field)]])
-              row[field_names.index("timestamp")] = datetime2string(row[field_names.index("timestamp")])
+                  update_Field_Names_Transitions(row)
               cursor.updateRow(row)
-        print(self.transitions)
-     
+        Field_Names_Transitions["FIN_SERIAL"].append(row[field_names.index(serial_id)])
+        Field_Names_Transitions["FIN_SERIAL"] = Field_Names_Transitions["FIN_SERIAL"][1:]
+        Field_Names_Transitions["ZONE"] = Field_Names_Transitions["ZONE"][1:]
+
     @signal 
-    def replace_emptyspacewithligacao(fieldzone_value,code_value):
+    def _replace_emptyspacewithligacao(self,fieldzone_value,code_value):
             return replace_bymatchorkeep(" ",fieldzone_value, code_value)     
 
 
     @signal
     def _Cartrack2Time(self,descriptionstring):
-        Cartrack = {"SplitSep":'<br></br>',
-                "CarTrackTimeFieldName":"Time: ",
-                "TimeStampWithoutUTCOffset": (6,25),
-                "UTCOffset": (26,28)}
         #These are hardocded values: 4th place in the list, oly after the 6th character
-        splitsep_str= Cartrack["SplitSep"]
-        Cartrackfield_str = Cartrack["CarTrackTimeFieldName"] 
+        splitsep_str= self.Cartrack["SplitSep"]
+        Cartrackfield_str = self.Cartrack["CarTrackTimeFieldName"] 
         string_list = descriptionstring.split(splitsep_str)
         time_string_1 = [string for string in string_list if Cartrackfield_str in string]
-        dtime_string = time_string_1[0][Cartrack["TimeStampWithoutUTCOffset"][0]:Cartrack["TimeStampWithoutUTCOffset"][1]]
+        dtime_string = time_string_1[0][self.Cartrack["TimeStampWithoutUTCOffset"][0]:self.Cartrack["TimeStampWithoutUTCOffset"][1]]
 
-        offset_string = time_string_1[0][Cartrack["UTCOffset"][0]:Cartrack["UTCOffset"][1]]
+        offset_string = time_string_1[0][self.Cartrack["UTCOffset"][0]:self.Cartrack["UTCOffset"][1]]
 
         #convert the time offset string to a timedelta object
         offset_obj = datetime.timedelta(hours=int(offset_string))
@@ -212,7 +269,7 @@ class ShiftDir(object):
 
 
     @signal
-    def join_pointswithpolygon(self):
+    def _join_pointswithpolygon(self):
         self._copy_mergedppolygon()
         points = self.shiftpaths["ShiftName"]["SHP"]["SHPmerged"]["filepathdicts"]["SHPmerged.shp"]
         polygon = self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["filepathdicts"]["CircuitPolygon.shp"]
@@ -221,7 +278,7 @@ class ShiftDir(object):
         spatialjoin_shpfiles(points,polygon,pointsnotparsedzonegraded)
         deletefieldnames = self.Field_Names_Points["Delete"]
         discard_fieldsInshpfile(pointsnotparsedzonegraded,deletefieldnames)
-        add_idfield2shpfile(pointsnotparsedzonegraded,self.Field_Names_Points["Incrementing_Int"])
+        add_idfield2shpfile(pointsnotparsedzonegraded,self.Field_Names_Points["SERIAL_ID"])
     
 
 
@@ -231,7 +288,7 @@ class ShiftDir(object):
         copy_directory(self.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["path"],self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["path"])
         old_basename,_ = os.path.splitext(os.path.basename(self.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["filepathdicts"]["SingleObjectBuffered.shp"]))
         new_basename,_ = os.path.splitext(os.path.basename(self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["filepathdicts"]["CircuitPolygon.shp"]))
-        rename_files(self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["path"],old_basename,new_basename)
+        rename_shpfiles(self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["path"],old_basename,new_basename)
 
     @signal
     def _convert_kml2shp(self):

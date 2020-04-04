@@ -18,6 +18,7 @@ def timer(func,*args, **kwargs):
            print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
     return wrapper_timer
 
+
 def signal(func,*args, **kwargs):
     """Print the runtime of the decorated function"""
     @functools.wraps(func)

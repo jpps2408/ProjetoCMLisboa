@@ -47,79 +47,19 @@ from timeparsingtools import *
 #
 
 
-#circuit_folder = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104"
-#circuit_object = CD.CircuitDir(circuit_folder)
-#circuit_object.make_CircuitPolygon(50)
+circuit_folder = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104"
+circuit_object = CD.CircuitDir(circuit_folder)
+circuit_object.make_CircuitPolygon(50)
 
-#realizacao = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2"
-#shift = ShiftDir(realizacao,circuit_object)
-#shift.parse_field()
-##print("")
+realizacao = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2"
+shift = ShiftDir(realizacao,circuit_object)
+shift.process_shift()
+
+print("")
 ######################################################
 ################## ##################
 ######################################################
 
 
-#pointsparsedzonegraded = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_ZoneCoded\Points_Parsed_ZoneCoded.shp"
-#field_names = ["SERIAL","descrp","timestamp","ZONA"]
-#previous_transition = ""
-#transitions= []
-#with arcpy.da.UpdateCursor(pointsparsedzonegraded,field_names,where_clause=) as cursor:
-#    for row in cursor:
-#        prev_row = row
-#        row[field_names.index("timestamp")] = self._Cartrack2Time(row[field_names.index("descrp")]) 
-#        current_row_int = row[field_names.index("SERIAL")]
-#        current_transition = row[field_names.index("ZONA")]
-#        row[field_names.index("ZONA")] = replace_emptyspacewithligacao(current_transition,"ligacao")
-#        if get_transition(previous_transition,current_transition):
-#            previous_transition = current_transition
-#            transitions.append([row[field_names.index("timestamp")],row[field_names.index("ZONA")],row[field_names.index("SERIAL")]])
-#        row[field_names.index("timestamp")] = datetime2string(row[field_names.index("timestamp")])
-#        cursor.updateRow(row)
-
-@signal 
-def replace_emptyspacewithligacao(fieldzone_value,code_value):
-        return replace_bymatchorkeep(" ",fieldzone_value, code_value)     
-@signal
-def _Cartrack2Time(self,descriptionstring):
-    Cartrack = {"SplitSep":'<br></br>',
-                "CarTrackTimeFieldName":"Time: ",
-                "TimeStampWithoutUTCOffset": (6,25),
-                "UTCOffset": (26,28)}
-    #These are hardocded values: 4th place in the list, oly after the 6th character
-    splitsep_str= self.Cartrack["SplitSep"]
-    Cartrackfield_str = Cartrack["CarTrackTimeFieldName"] 
-    string_list = descriptionstring.split(splitsep_str)
-    time_string_1 = [string for string in string_list if Cartrackfield_str in string]
-    dtime_string = time_string_1[0][Cartrack["TimeStampWithoutUTCOffset"][0]:Cartrack["TimeStampWithoutUTCOffset"][1]]
-
-    offset_string = time_string_1[0][Cartrack["UTCOffset"][0]:Cartrack["UTCOffset"][1]]
-
-    #convert the time offset string to a timedelta object
-    offset_obj = datetime.timedelta(hours=int(offset_string))
-    datetime_obj = string2datetime(dtime_string)
-
-    #offset the time based on the +00 or +01 part of the string, so as to make times with different offsets comparables
-    time_convertible = datetime_obj + offset_obj
-    return time_convertible
 
 
-pointsparsedzonegraded = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_ZoneCoded\Points_Parsed_ZoneCoded.shp"
-field_names = ["SERIAL","descrp","timestamp","ZONA"]
-previous_transition = ""
-transitions= []
-var = arcpy.GetCount_management(pointsparsedzonegraded).getOutput(0)
-with arcpy.da.UpdateCursor(pointsparsedzonegraded,field_names,where_clause="SERIAL="+str(int(arcpy.GetCount_management(pointsparsedzonegraded).getOutput(0))-1)) as cursor:
-    for row in cursor:
-        prev_row = row
-        row[field_names.index("timestamp")] = _Cartrack2Time(row[field_names.index("descrp")]) 
-        current_row_int = row[field_names.index("SERIAL")]
-        current_transition = row[field_names.index("ZONA")]
-        row[field_names.index("ZONA")] = replace_emptyspacewithligacao(current_transition,"ligacao")
-        if get_transition(previous_transition,current_transition):
-            previous_transition = current_transition
-            transitions.append([row[field_names.index("timestamp")],row[field_names.index("ZONA")],row[field_names.index("SERIAL")]])
-        row[field_names.index("timestamp")] = datetime2string(row[field_names.index("timestamp")])
-        cursor.updateRow(row)
-
-a = int(arcpy.GetCount_management(pointsparsedzonegraded).getOutput(0))-1
