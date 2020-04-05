@@ -39,6 +39,7 @@ class ShiftDir(object):
                     self.zone_classification['CIRCUIT']:"P",
                     self.zone_classification['UNLOADING']:"D",
                     self.zone_classification['CONNECTION']:"L"}
+            self.Field_Names_Groupby = {}
             self.shiftdirectory = os.path.abspath(shiftdirectory)
             self.shift = os.path.basename(self.shiftdirectory)
             self.pardir = os.path.abspath(os.path.join(shiftdirectory,os.path.pardir))
@@ -150,7 +151,7 @@ class ShiftDir(object):
                {
                   "namestandard": "ReportAnalysis",
                   "alias": "ReportAnalysis",
-                  "filesystem": None,
+                  "filesystem": {"Time_Intervals.csv":"Time_Intervals.csv"},
                   "children" : None}
 
                   ]
@@ -174,15 +175,23 @@ class ShiftDir(object):
     @timer
     def process_shift(self):
         self._join_pointswithpolygon()
-        self._parse_field()
+        self.parse_field()
+        self.get_timereports()
   
         
+    
 
 
+
+    
+
+    @timer
+    def get_timereports(self):
+        write_brandcsv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_Intervals.csv"],self.Field_Names_Groupby)
 
 
     @timer    
-    def _parse_field(self):
+    def parse_field(self):
         #assign fieldnames strings to variables
         serial_id = self.Field_Names_Points["SERIAL_ID"]
         singlestring = self.Field_Names_Points["SINGLESTRING"]
@@ -206,18 +215,19 @@ class ShiftDir(object):
         #get a transitions dictionary of lists. Note that this is defined inside a class method because if it was
         #defined outside a class method bu inside a class body, it would be a class variable and hence if we changed 
         #the instance we were dealing with we would get the same transition lists throughout all of the living objects/instances 
-        previous_transition = ""
-        Field_Names_Transitions = {"INI_SERIAL":[],
+        previous_place = ""
+
+
+        Field_Names_Groupby = {"INI_SERIAL":[],
                                "FIN_SERIAL":[],
                                "TIME":[],
-                               "TIMESTAMP":[],
-                               "FLAG":[],
-                               "ZONE":[previous_transition]}
+                               "INTERVAL":[],
+                               "ZONE":[previous_place]}
 
-        def update_Field_Names_Transitions(row):
-           Field_Names_Transitions["INI_SERIAL"].append(row[field_names.index(serial_id)])
-           Field_Names_Transitions["TIMESTAMP"].append(string2datetime(row[field_names.index(time)]))
-           Field_Names_Transitions["ZONE"].append(row[field_names.index(zone)])
+        def update_Field_Names_Groupby(row):
+           Field_Names_Groupby["INI_SERIAL"].append(row[field_names.index(serial_id)])
+           Field_Names_Groupby["TIME"].append(row[field_names.index(time)])
+           Field_Names_Groupby["ZONE"].append(row[field_names.index(zone)])
         
 
         
@@ -225,19 +235,29 @@ class ShiftDir(object):
            for row in cursor:
               row[field_names.index("timestamp")] = datetime2string(self._Cartrack2Time(row[field_names.index(singlestring)]))
               current_row_int = row[field_names.index(serial_id)]
-              current_transition = row[field_names.index(zone)]
-              row[field_names.index(zone)] = self._replace_emptyspacewithligacao(current_transition,ligacao_str)
+              current_place = row[field_names.index(zone)]
+              row[field_names.index(zone)] = self._replace_emptyspacewithligacao(current_place,ligacao_str)
 
-              if get_transition(previous_transition,current_transition):
-                  if previous_transition == Field_Names_Transitions["ZONE"][-1]:
-                     Field_Names_Transitions["FIN_SERIAL"].append(row[field_names.index(serial_id)]-1)
-                  previous_transition = current_transition
-                  update_Field_Names_Transitions(row)
+              if get_place(previous_place,current_place):
+                  if previous_place == Field_Names_Groupby["ZONE"][-1]:
+                     Field_Names_Groupby["FIN_SERIAL"].append(row[field_names.index(serial_id)]-1)
+                  previous_place = current_place
+                  update_Field_Names_Groupby(row)
               cursor.updateRow(row)
 
-        Field_Names_Transitions["FIN_SERIAL"].append(row[field_names.index(serial_id)])
-        Field_Names_Transitions["FIN_SERIAL"] = Field_Names_Transitions["FIN_SERIAL"][1:]
-        Field_Names_Transitions["ZONE"] = Field_Names_Transitions["ZONE"][1:]
+        Field_Names_Groupby["FIN_SERIAL"].append(row[field_names.index(serial_id)])
+        Field_Names_Groupby["FIN_SERIAL"] = Field_Names_Groupby["FIN_SERIAL"][1:]
+        Field_Names_Groupby["ZONE"] = Field_Names_Groupby["ZONE"][1:]
+        end_time = Field_Names_Groupby["TIME"][1:]
+        end_time.append(row[field_names.index("timestamp")])
+        start_time = map(string2datetime,Field_Names_Groupby["TIME"])
+        end_time = map(string2datetime,end_time)
+        start_time_np =  np.array(start_time)
+        end_time_np =  np.array(end_time)
+        period_time_np = end_time_np - start_time_np
+        Field_Names_Groupby["INTERVAL"] = map(tinterval_string,period_time_np) 
+        self.Field_Names_Groupby = Field_Names_Groupby
+
 
     @signal 
     def _replace_emptyspacewithligacao(self,fieldzone_value,code_value):

@@ -3,8 +3,9 @@ from ostools import *
 from timeparsingtools import * 
 from toolsgis import *
 import geopandas as gpd
+import numpy as np
 import fiona as fi
-
+import csv
 
 GeoReferences =  {
       "Portugal_CRS": "+proj=tmerc +lat_0=39.66825833333333 +lon_0=-8.133108333333334 +k=1 +x_0=0 +y_0=0 +ellps=GRS80 +units=m +no_defs "
@@ -79,6 +80,40 @@ def merge_shpfilesinshpfolder(shpsplitfolderabsolutepath,shpconvertedfileabsolut
 
 
 
+
+@timer
+def write_brandcsv(place,data):
+    '''
+    Creates a .csv with the header and a single row
+    '''
+    print(place)
+    print('writing csv - start')
+    with open(place, 'wb') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL, delimiter=';')
+        wr.writerow(data.keys())
+        wr.writerows(zip(*data.values()))
+    print('writing csv - end')
+
+
+@timer
+def add_line2csv(place,data):
+    '''
+    Appends a single row to existing csv
+    '''
+    print(place)
+    print('appending csv - start')
+    with open(place, 'ab') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL, delimiter=';')
+        wr.writerows(zip(*data.values()))
+    print('appending csv - end')
+
+
+@timer
+def choosewriteadd(csvpath, data):
+    if not os.path.exists(csvpath):
+        write_brandcsv(csvpath, data)
+    else:
+        add_line2csv(csvpath,data)
 
 
 

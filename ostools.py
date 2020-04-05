@@ -92,8 +92,9 @@ def replace_bymatchorkeep(match_str,old_str,new_str):
         return old_str
 
 @signal
-def get_transition(previous_string,current_string):
+def get_place(previous_string,current_string):
         if previous_string != current_string:
             return True
         else:
             return False
+
