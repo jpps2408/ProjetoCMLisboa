@@ -1,3 +1,17 @@
+
+
+
+INI_SERIAL_list_copy.reverse()
+aux_classification.reverse()
+i=0
+while INI_SERIAL_list_copy[i] != 2460:
+    aux_classification[i] = "final"
+    i+=1
+INI_SERIAL_list_copy.reverse()
+aux_classification.reverse()
+
+
+
 TIMESTAMP_SERIAL_LIST = [datetime.datetime(2020, 1, 7, 22, 46, 6), datetime.datetime(2020, 1, 7, 23, 10, 13), 
                          datetime.datetime(2020, 1, 7, 23, 26, 26), datetime.datetime(2020, 1, 7, 23, 27, 25),
                         datetime.datetime(2020, 1, 7, 23, 27, 45), datetime.datetime(2020, 1, 8, 0, 18, 32), 
@@ -24,35 +38,67 @@ INI_SERIAL_list = [0, 161, 293, 305, 307, 713, 761, 856, 879, 881, 882, 964,
 
 INI_SERIAL_list_copy = INI_SERIAL_list
 
-aux_classification = []
-i=0
-for i in range(len(INI_SERIAL_list_copy)):
-    aux_classification.append("first")
-    i+=1
 
 
-INI_SERIAL_list_copy.reverse()
-aux_classification.reverse()
-i=0
-for list_elem in INI_SERIAL_list_copy:
-    if list_elem == 2460:
-        aux_classification[i] = "final"
-        i+=1
 
-INI_SERIAL_list_copy.reverse()
-aux_classification.reverse()
+ZONE_list = [u'garagem', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao',
+            u'recolha', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao', u'descarga', u'ligacao', u'recolha', u'ligacao',
+            u'garagem', u'ligacao', u'descarga', u'ligacao', u'descarga', u'ligacao', u'garagem']
+
+zone_classification = {
+                    'GARAGE':'garagem',
+                    'CIRCUIT':'recolha',
+                    'UNLOADING':'descarga',
+                    'CONNECTION':'ligacao',
+                    'CODE_FIELD_NAME':'ZONA'}
+
+zone_abbreviation = {
+                    zone_classification['GARAGE']:"G",
+                    zone_classification['CIRCUIT']:"C",
+                    zone_classification['UNLOADING']:"D",
+                    zone_classification['CONNECTION']:"L",
+                    'begin':'B',
+                    'end':'E'}
 
 
-ZONE_list = [u'garagem', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao',
-            u'recolha', u'ligacao', u'recolha', u'ligacao', u'recolha', u'ligacao', u'descarga', u'ligacao', u'recolha', u'ligacao',
-           u'garagem', u'ligacao', u'descarga', u'ligacao', u'descarga', u'ligacao', u'garagem']
+CLASSIFICATION_LIST = []
 
+track_list = []
 
-big_track_dict = {
-                    (("S","P"),"P"): ("P","C"),
-                    (("P","C"),"C"): ("C","T"),
-                    (("C","T"),"P"): ("C","P"),
+def get_track_codes():
+    b = zone_abbreviation['begin']
+    g = zone_abbreviation[zone_classification['GARAGE']]
+    p = zone_abbreviation[zone_classification['CIRCUIT']]
+    d = zone_abbreviation[zone_classification['UNLOADING']]
+    l = zone_abbreviation[zone_classification['CONNECTION']]
+    e = zone_abbreviation['end']
+
+    forward_check_dict = {
+                    ((b,p),p): (p,p),
+                    ((p,p),d): (d,d),
+                    ((d,d),p): (d,p),
+                    ((d,e),p): (d,p),
                     }
+    backward_check_dict = {
+                    ((b,p),p,1): ((p,p),1),
+                    ((b,p),p,1): ((p,p),1),
+                    ((b,p),p): (p,p),
+                    ((p,p),d): (d,d),
+                    ((d,d),p): (d,p),
+                    ((d,e),p): (d,p),
+                    }
+
+
+
+
+
+
+track_dict = {((zone_abbreviation['source'],zone_abbreviation[zone_classification['GARAGE']]), 
+    
+    }
+
+
+
 
 small_track_dict = {
                     (("P","C"),"P"): ("P","C"),
@@ -69,5 +115,5 @@ def get_newtrack(track,place):
 
 track = ("S","P")
 for zone in ZONE_list:
-    self.zone_classification['GARAGE']
+    zone_classification['GARAGE']
 

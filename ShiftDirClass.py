@@ -192,8 +192,7 @@ class ShiftDir(object):
 
         #assign "connection" code to a variable
         ligacao_str = self.zone_classification['CONNECTION']
-        
-        
+
         #get the two fielpaths to that contains the non parsed points and the parsed poitns
         pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
         pointsparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["filepathdicts"]["Points_Parsed_ZoneGraded.shp"]
@@ -235,6 +234,7 @@ class ShiftDir(object):
                   previous_transition = current_transition
                   update_Field_Names_Transitions(row)
               cursor.updateRow(row)
+
         Field_Names_Transitions["FIN_SERIAL"].append(row[field_names.index(serial_id)])
         Field_Names_Transitions["FIN_SERIAL"] = Field_Names_Transitions["FIN_SERIAL"][1:]
         Field_Names_Transitions["ZONE"] = Field_Names_Transitions["ZONE"][1:]
