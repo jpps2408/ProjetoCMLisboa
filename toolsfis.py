@@ -3,6 +3,7 @@ from ostools import *
 from timeparsingtools import * 
 from toolsgis import *
 import geopandas as gpd
+import pandas as pd
 import numpy as np
 import fiona as fi
 import csv
@@ -79,6 +80,21 @@ def merge_shpfilesinshpfolder(shpsplitfolderabsolutepath,shpconvertedfileabsolut
     merge_polygons(shpfiles_list,shpconvertedfileabsolutepath)
 
 
+
+@timer
+def write_dictcsv(place,data,fieldnames):
+    '''
+    Creates a .csv with the header and a single row
+    '''
+    print(place)
+    print('writing csv - start')
+    with open(place, 'wb') as myfile:
+        wr = csv.DictWriter(myfile,fieldnames, quoting=csv.QUOTE_ALL, delimiter=';')
+        wr.writeheader()
+        for row in csv.DictWriter(myfile):
+        # writes the reordered rows to the new file
+            writer.writerow(row)
+    print('writing csv - end')
 
 
 @timer

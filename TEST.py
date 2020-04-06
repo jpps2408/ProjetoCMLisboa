@@ -29,22 +29,7 @@ def set_georeference(inputshpfile,reference):
 
 def get_georeference(reference):
     return arcpy.SpatialReference(reference)
-
-#######Add start_x,start_y,end_x,end_y fields to each row ###############
-pontos_shpfile=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_Zone\Points_Parsed_Zone.shp"
-pontos_shpfile_upsidedown=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_Zone\Points_Parsed_Zone.shp"
-pontos_shpfile_=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_Summary\Points_Parsed_Summary.shp"
-
-add_numattribute2shpfile(pontos_shpfile,'start_x')
-add_numattribute2shpfile(pontos_shpfile,'start_y')
-add_numattribute2shpfile(pontos_shpfile,'end_x')
-add_numattribute2shpfile(pontos_shpfile,'end_y')
-
-#Create the shp 
-set_georeference(pontos_shpfile,"ETRS 1989 Portugal TM06")
-add_attribute2shpfile(pontos_shpfile,attribute="POINT_X_Y_Z_M")
-arcpy.CalculateField_management(pontos_shpfile, "start_x", "!POINT_X!", "PYTHON_9.3", "")
-arcpy.CalculateField_management(pontos_shpfile, "start_y", "!POINT_Y!", "PYTHON_9.3", "")
+linha_shpfile = "C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Line_Tranche_Code\Line_Tranche_Code.shp"
 
 
 
@@ -55,23 +40,13 @@ nrrows = str(int(arcpy.GetCount_management(pontos_shpfile).getOutput(0)) -1)
 
 
 #get the first row, but since it is inverted we get the row whose serial number is largest
-field_names = ['start_x','start_y','end_x','end_y']
-with arcpy.da.UpdateCursor(pontos_shpfile_,field_names,where_clause = "SERIAL="+nrrows) as cursor:
-    for row in cursor:
-        prev_row = row
-        break
-
-#update the end x and end y
-with arcpy.da.UpdateCursor(pontos_shpfile_,field_names) as cursor:
-    for row in cursor:
-        row[field_names.index('end_x')] = prev_row[field_names.index('start_x')]
-        row[field_names.index('end_y')] = prev_row[field_names.index('start_y')]
-        prev_row = row
-        cursor.updateRow(row)
 
 
+linha_shpfile = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Line_Tranche_Code\Line_Tranche_Code.shp"
 
-sr = get_georeference("ETRS 1989 Portugal TM06")
-outlines = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Line_Separate_NotCoded\Line_Separate_NotCoded.shp"
-sort_shpfilebyidfield(pontos_shpfile_,pontos_shpfile_upsidedown,"SERIAL",False)
-arcpy.XYToLine_management(pontos_shpfile_upsidedown,outlines,"start_x","start_y","end_x","end_y",spatial_reference = "ETRS 1989 Portugal TM06")
+
+field_names = ['ZONA','LENGTH',"BLOCK_ID"]
+
+import geopandas as gpd
+
+import pandas as pd

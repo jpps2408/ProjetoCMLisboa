@@ -92,21 +92,21 @@ class ShiftDir(object):
                    "children" : None},
 
                     {
-                   "namestandard": "Line_Sections",
-                   "alias": "Line_Sections",
-                   "filesystem": {"Line_Sections.shp":"Line_Sections.shp"},
+                   "namestandard": "Line_Tranche",
+                   "alias": "Line_Tranche",
+                   "filesystem": {"Line_Tranche.shp":"Line_Tranche.shp"},
                    "children" : None},
-
+                   
                     {
-                   "namestandard": "Points_Parsed_Guided",
-                   "alias": "Points_Parsed_Summary",
-                   "filesystem": {"Points_Parsed_Summary.shp":"Points_Parsed_Summary.shp"},
+                   "namestandard": "Line_Sole",
+                   "alias": "Line_Sole",
+                   "filesystem": {"Line_Sole.shp":"Line_Sole.shp"},
                    "children" : None},
                                      
                     {
-                   "namestandard": "Line_Sections_Guided",
-                   "alias": "Line_Sections",
-                   "filesystem": {"Line_Sections.shp":"Line_Sections.shp"},
+                   "namestandard": "Line_Tranche_Code",
+                   "alias": "Line_Tranche_Code",
+                   "filesystem": {"Line_Tranche_Code.shp":"Line_Tranche_Code.shp"},
                    "children" : None},
 
                   {
@@ -157,10 +157,14 @@ class ShiftDir(object):
                               "SERIAL_ID":"SERIAL",
                               "SINGLESTRING":"descrp",
                               "TIME":"timestamp",
-                              "ZONE": self.zone_classification["CODE_FIELD_NAME"]}
+                              "ZONE": self.zone_classification["CODE_FIELD_NAME"],
+                              "BLOCK_ID":"BLOCK_ID"}
 
         shiftpathsobject = DictionaryExplorer(self.pardir)
         self.shiftpaths = shiftpathsobject.recursive_dictglobalexplorer(shiftJSONDIR)
+
+
+
 
 
         
@@ -168,60 +172,55 @@ class ShiftDir(object):
     def process_shift(self):
         self._join_pointswithpolygon()
         self.parse_field()
-        self.get_timereports()
         self.create_singlelinewithpoints()
-        self.create_singlelinewithpoints()
+        self.get_reports()
     
 
+    @timer
+    def get_reports(self):
+        df = pd.DataFrame(self.Field_Names_Groupby)
+        fieldnames=["INI_SERIAL","FIN_SERIAL","BLOCK_ID","TIME","ZONE","INTERVAL","DISPLACEMENT"]
+        df = df[fieldnames]
+        df.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_Intervals.csv"],sep=';')
 
-
+        #write_dictcsv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_Intervals.csv"],self.Field_Names_Groupby, 
+       #              fieldnames=["INI_SERIAL","FIN_SERIAL","BLOCK_ID","TIME","ZONE","INTERVAL","DISPLACEMENT"])
+            
 
 
     @timer
     def create_singlelinewithpoints(self):
-        line_sections= self.shiftpaths['ShiftName']['Products']['Line_Sections']['filepathdicts']['Line_Sections.shp']
+        line_sole = self.shiftpaths['ShiftName']['Products']['Line_Sole']['filepathdicts']['Line_Sole.shp']
+        line_part_uncoded = self.shiftpaths['ShiftName']['Products']['Line_Tranche']['filepathdicts']['Line_Tranche.shp']
         points = self.shiftpaths['ShiftName']['Products']['Points_Parsed_Zone']['filepathdicts']['Points_Parsed_Zone.shp']
-        points_upsidedown = self.shiftpaths['ShiftName']['Products']['Points_Parsed_Flipped']['filepathdicts']['Points_Parsed_Flipped.shp']
+        line_part_coded = self.shiftpaths['ShiftName']['Products']['Line_Tranche_Code']['filepathdicts']['Line_Tranche_Code.shp']
+
+        convert_points2line(points,line_sole)
+        split_linein2pairs(line_sole,line_part_uncoded)
+        spatialjoin_shpfiles(line_part_uncoded,points,line_part_coded)
+        add_attribute2shpfile(line_part_coded)
+
+        blockid_array,length_array = self._get_gpdindexvalues(line_part_coded,self.Field_Names_Points["BLOCK_ID"],'LENGTH')           
+        length_array = self._fill_length_distwithzeros(self.Field_Names_Groupby["BLOCK_ID"],blockid_array,length_array)
+        self.Field_Names_Groupby["DISPLACEMENT"] = length_array
+
+
+    def _fill_length_distwithzeros(self,blockid_time,blockid_dist,length_dist):
+        differentblocks = set(blockid_time)-set(blockid_dist)
+        for index in sorted(differentblocks):
+            np.insert(length_dist,index,float(0))
+        return length_dist
         
-        set_georeference(points,"ETRS 1989 Portugal TM06")
-        add_attribute2shpfile(points,attribute="POINT_X_Y_Z_M")
 
-        add_numattribute2shpfile(points,'start_x')
-        add_numattribute2shpfile(points,'start_y')
-        add_numattribute2shpfile(points,'end_x')
-        add_numattribute2shpfile(points,'end_y')
-        copy_fields(points,"POINT_X","start_x")
-        copy_fields(points,"POINT_y","start_y")
+    
+    def _get_gpdindexvalues(self,shpfile,groupfieldname,sumfieldname):
+        pd_all = gpd.read_file(shpfile)
+        pd_index_values = pd_all[[sumfieldname,groupfieldname]].groupby([groupfieldname])[sumfieldname].sum()
+        pd_index = pd_index_values.index.values
+        pd_values = pd_index_values.values
+        return pd_index,pd_values
 
-        sort_shpfilebyidfield(points,points_upsidedown,self.Field_Names_Points["SERIAL_ID"],True)
-        nrrows = str(int(arcpy.GetCount_management(points).getOutput(0)) -1)
-
-        #get the first row, but since it is inverted we get the row whose serial number is largest
-        field_names = ['start_x','start_y','end_x','end_y']
-        with arcpy.da.UpdateCursor(points_upsidedown,field_names,where_clause = "SERIAL="+nrrows) as cursor:
-            for row in cursor:
-                prev_row = row
-                break
-        
-        
-        #update the end x and end y
-        with arcpy.da.UpdateCursor(points_upsidedown,field_names) as cursor:
-            for row in cursor:
-                row[field_names.index('end_x')] = prev_row[field_names.index('start_x')]
-                row[field_names.index('end_y')] = prev_row[field_names.index('start_y')]
-                prev_row = row
-                cursor.updateRow(row)
-
-        sr = get_georeference("ETRS 1989 Portugal TM06")
-        sort_shpfilebyidfield(points_upsidedown,points,"SERIAL",False)
-        arcpy.XYToLine_management(points,line_sections,"start_x","start_y","end_x","end_y",spatial_reference = sr)
-
-
-
-
-    @timer
-    def get_timereports(self):
-        write_brandcsv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_Intervals.csv"],self.Field_Names_Groupby)
+    
 
 
     @timer    
@@ -231,7 +230,8 @@ class ShiftDir(object):
         singlestring = self.Field_Names_Points["SINGLESTRING"]
         zone = self.Field_Names_Points["ZONE"]
         time = "timestamp"
-        field_names = [serial_id,singlestring,time,zone]
+        block_id = self.Field_Names_Points["BLOCK_ID"]
+        field_names = [serial_id,singlestring,time,zone,block_id]
 
         #assign "connection" code to a variable
         ligacao_str = self.zone_classification['CONNECTION']
@@ -246,6 +246,7 @@ class ShiftDir(object):
                      os.path.splitext(os.path.basename(pointsnotparsedzonegraded))[0],
                      os.path.splitext(os.path.basename(pointsparsedzonegraded))[0])
         
+        add_longattribute2shpfile(pointsparsedzonegraded,block_id)
         #get a transitions dictionary of lists. Note that this is defined inside a class method because if it was
         #defined outside a class method bu inside a class body, it would be a class variable and hence if we changed 
         #the instance we were dealing with we would get the same transition lists throughout all of the living objects/instances 
@@ -256,7 +257,9 @@ class ShiftDir(object):
                                "FIN_SERIAL":[],
                                "TIME":[],
                                "INTERVAL":[],
-                               "ZONE":[previous_place]}
+                               "ZONE":[previous_place],
+                               "BLOCK_ID":[],
+                               "DISPLACEMENT":[]}
 
         def update_Field_Names_Groupby(row):
            Field_Names_Groupby["INI_SERIAL"].append(row[field_names.index(serial_id)])
@@ -264,8 +267,8 @@ class ShiftDir(object):
            Field_Names_Groupby["ZONE"].append(row[field_names.index(zone)])
         
 
-
-
+        
+        block_count = 0
         with arcpy.da.UpdateCursor(pointsparsedzonegraded,field_names) as cursor:
            for row in cursor:
               row[field_names.index("timestamp")] = datetime2string(self._Cartrack2Time(row[field_names.index(singlestring)]))
@@ -276,10 +279,13 @@ class ShiftDir(object):
               if get_place(previous_place,current_place):
                   if previous_place == Field_Names_Groupby["ZONE"][-1]:
                      Field_Names_Groupby["FIN_SERIAL"].append(row[field_names.index(serial_id)]-1)
+                  block_count+=1
+                  Field_Names_Groupby["BLOCK_ID"].append(block_count)
                   previous_place = current_place
                   update_Field_Names_Groupby(row)
+              row[field_names.index(block_id)] = block_count
               cursor.updateRow(row)
-
+        
         Field_Names_Groupby["FIN_SERIAL"].append(row[field_names.index(serial_id)])
         Field_Names_Groupby["FIN_SERIAL"] = Field_Names_Groupby["FIN_SERIAL"][1:]
         Field_Names_Groupby["ZONE"] = Field_Names_Groupby["ZONE"][1:]
