@@ -75,16 +75,16 @@ class ShiftDir(object):
 
                   {
                    "namestandard": "Points_Parsed_ZoneGraded",
-                   "alias": "Points_Parsed_ZoneCoded",
+                   "alias": "Points_Parsed_ZoneGraded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Points_Parsed_ZoneGraded.shp":"Points_Parsed_ZoneCoded.shp"},
+                   "filesystem": {"Points_Parsed_ZoneGraded.shp":"Points_Parsed_ZoneGraded.shp"},
                    "children" : None}, 
                   
                   {
                    "namestandard": "Points_NotParsed_ZoneGraded",
-                   "alias": "Points_NotParsed_ZoneCoded",
+                   "alias": "Points_NotParsed_ZoneGraded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Points_NotParsed_ZoneGraded.shp":"Points_NotParsed_ZoneCoded.shp"},
+                   "filesystem": {"Points_NotParsed_ZoneGraded.shp":"Points_NotParsed_ZoneGraded.shp"},
                    "children" : None},
 
                    {
@@ -95,25 +95,45 @@ class ShiftDir(object):
                    "children" : None},
 
                    {
-                   "namestandard": "Points_Parsed_TransitionGraded",
-                   "alias": "Points_Parsed_TransitionCoded",
+                   "namestandard": "Points_Parsed_Coded",
+                   "alias": "Points_Parsed_Coded",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Points_Parsed_TransitionGraded.shp":"Points_Parsed_TransitionCoded.shp"},
+                   "filesystem": {"Points_Parsed_Coded.shp":"Points_Parsed_Coded.shp"},
                    "children" : None},
                   
+
                   {
-                   "namestandard": "Line_Merged_TransitionGraded",
-                   "alias": "Line_Merged_TransitionGraded",
+                   "namestandard": "Line_Unmerged_Even",
+                   "alias": "Line_Unmerged_Even",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Merged_TransitionGraded.shp":"Line_Merged_TransitionGraded.shp"},
+                   "filesystem": {"Line_Unmerged_Even.shp":"Line_Unmerged_Even.shp"},
                    "children" : None},
 
-                 
-                   {
-                   "namestandard": "Line_Splitted_TransitionGraded",
-                   "alias": "Line_Splitted_TransitionGraded",
+                    {
+                   "namestandard": "Line_Unmerged_Odd",
+                   "alias": "Line_Unmerged_Odd",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Splitted_TransitionGraded.shp":"Line_Splitted_TransitionGraded.shp"},
+                   "filesystem": {"Line_Unmerged_Odd.shp":"Line_Unmerged_Odd.shp"},
+                   "children" : None},
+                                      
+                  {
+                   "namestandard": "Line_Merged_NotGraded",
+                   "alias": "Line_Merged_NotGraded",
+                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
+                   "filesystem": {"Line_Merged_NotGraded.shp":"Line_Merged_NotGraded.shp"},
+                   "children" : None},
+
+                    {
+                   "namestandard": "Line_Separate_NotCoded",
+                   "alias": "Line_Separate_NotCoded",
+                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
+                   "filesystem": {"Line_Separate_NotCoded.shp":"Line_Separate_NotCoded.shp"},
+                   "children" : None},
+                   {
+                   "namestandard": "Line_Separate_Coded",
+                   "alias": "Line_Separate_Coded",
+                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
+                   "filesystem": {"Line_Separate_Coded.shp":"Line_Separate_Coded.shp"},
                    "children" : None},
                                                          
                   {
@@ -160,7 +180,7 @@ class ShiftDir(object):
         ########END Layer 1 #########
         }
         
-
+        
         self.Field_Names_Points = {"Delete":["Name","TARGET_FID","Join_Count","Id","ORIG_FID"],
                               "SERIAL_ID":"SERIAL",
                               "SINGLESTRING":"descrp",
@@ -177,13 +197,65 @@ class ShiftDir(object):
         self._join_pointswithpolygon()
         self.parse_field()
         self.get_timereports()
-  
+        self.create_singlelinewithpoints()
         
     
 
 
 
-    
+    @timer
+    def create_singlelinewithpoints(self):
+        singleline_even = self.shiftpaths['ShiftName']['Products']['Line_Unmerged_Even']['filepathdicts']['Line_Unmerged_Even.shp']
+        singleline_odd= self.shiftpaths['ShiftName']['Products']['Line_Unmerged_Odd']['filepathdicts']['Line_Unmerged_Odd.shp']
+        singleline = self.shiftpaths['ShiftName']['Products']['Line_Merged_NotGraded']['filepathdicts']['Line_Merged_NotGraded.shp']
+        splittedlinenotgraded = self.shiftpaths['ShiftName']['Products']['Line_Separate_NotCoded']['filepathdicts']['Line_Separate_NotCoded.shp']
+        splittedlinegraded = self.shiftpaths['ShiftName']['Products']['Line_Separate_Coded']['filepathdicts']['Line_Separate_Coded.shp']
+        points = self.shiftpaths['ShiftName']['Products']['Points_Parsed_ZoneGraded']['filepathdicts']['Points_Parsed_ZoneGraded.shp']
+        
+
+        
+        @timer
+        def update_lists(shpfile):
+            nrrows = int(arcpy.GetCount_management(shpfile).getOutput(0))
+            save_1 = []
+            for num in range(nrrows/2):
+               save_1.append(num) 
+               save_1.append(num)
+            save_2 = save_1[:]
+            save_2.insert(0,-1)
+            if nrrows%2 == 0:
+                save_2.pop(-1)
+            else:
+                save_1.append(-1)
+            return save_1,save_2
+        
+
+        even_list,odd_list = update_lists(points)
+        field_names_dict = {"AUX_LINE_EVEN":"AUX_EVEN","AUX_LINE_ODD":"AUX_ODD"}
+        even_name = field_names_dict["AUX_LINE_EVEN"]
+        odd_name = field_names_dict["AUX_LINE_ODD"]
+        add_longattribute2shpfile(points,even_name)
+        add_longattribute2shpfile(points,odd_name)
+
+        field_names = [even_name,odd_name]
+        i=0
+        with arcpy.da.UpdateCursor(points,field_names) as cursor:
+           for row in cursor:
+              row[field_names.index(even_name)] = even_list[i]
+              row[field_names.index(odd_name)] = odd_list[i]
+              i+=1
+              cursor.updateRow(row)
+
+        convert_points2line(points,singleline_even,field_names_dict["AUX_LINE_EVEN"])
+        add_attribute2shpfile(singleline_even)
+        convert_points2line(points,singleline_odd,field_names_dict["AUX_LINE_ODD"])
+        add_attribute2shpfile(singleline_odd)
+        merge_shpfiles([singleline_even,singleline_odd],singleline)
+        spatialjoin_shpfiles(singleline,points,splittedlinegraded)
+
+
+
+
 
     @timer
     def get_timereports(self):
@@ -230,7 +302,8 @@ class ShiftDir(object):
            Field_Names_Groupby["ZONE"].append(row[field_names.index(zone)])
         
 
-        
+
+
         with arcpy.da.UpdateCursor(pointsparsedzonegraded,field_names) as cursor:
            for row in cursor:
               row[field_names.index("timestamp")] = datetime2string(self._Cartrack2Time(row[field_names.index(singlestring)]))

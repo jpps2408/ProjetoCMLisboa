@@ -28,6 +28,7 @@
     <Compile Include="module6.py" />
     <Compile Include="ProjetoMunLis.py" />
     <Compile Include="ShiftDirClass.py" />
+    <Compile Include="TEST.py" />
     <Compile Include="timeparsingtools.py" />
     <Compile Include="toolsfis.py" />
     <Compile Include="toolsgis.py" />

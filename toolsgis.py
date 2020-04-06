@@ -17,8 +17,8 @@ def convert_shpfile2convexhull(inputshpfile,outputshpfile):
    
    arcpy.management.MinimumBoundingGeometry(inputshpfile, outputshpfile, 
                                                      "CONVEX_HULL", "ALL")
+   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06")
  
-
 
 @timer
 def buffer_shpfiles(inputshpfile,outputshpfile,buffersize):
@@ -26,7 +26,8 @@ def buffer_shpfiles(inputshpfile,outputshpfile,buffersize):
    inputshpfile: (str)
    outputshpfile: (str)
    buffersize: (int)"""
-   arcpy.analysis.Buffer(inputshpfile,outputshpfile,str(buffersize) + ' METERS', "FULL", "ROUND", "NONE")   
+   arcpy.analysis.Buffer(inputshpfile,outputshpfile,str(buffersize) + ' METERS', "FULL", "ROUND", "NONE")  
+   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06") 
 
 
 @timer
@@ -35,20 +36,23 @@ def merge_shpfiles(inputshpfilpath_list,outputshpfile):
       inputshpfilpath_list: (list of str)
       outputshpfile: (str)"""
    arcpy.management.Merge(inputshpfilpath_list, outputshpfile)
+   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06")
 
 
 @timer
 def spatialjoin_shpfiles(inputshpfiletobeclassified,inputshpfilewithcode,outputshpfile):
    """It is a type of intersection, that handles shp files of different types. We use it to classify the points"""
    arcpy.analysis.SpatialJoin(inputshpfiletobeclassified, inputshpfilewithcode, outputshpfile)
+   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06")
 
 
 @timer
-def convert_points2line(inputpointsshpfile,outputlineshpfilepath):
+def convert_points2line(inputpointsshpfile,outputlineshpfilepath,line_field=None):
    """Convert all of the points into a single line
    inputshpfile: (str)
    outputshpfile: (str)"""
-   arcpy.PointsToLine_management(inputpointsshpfile,outputlineshpfilepath)
+   arcpy.PointsToLine_management(inputpointsshpfile,outputlineshpfilepath,Line_Field = line_field)
+   set_georeference(outputlineshpfilepath,"ETRS 1989 Portugal TM06")
 
 
 @timer
@@ -67,12 +71,19 @@ def add_attribute2shpfile(inputpointsshpfile,attribute = 'LENGTH',attribute_unit
    arcpy.AddGeometryAttributes_management(inputpointsshpfile,attribute,attribute_unit)
 
 
+
 @timer
 def add_textattribute2shpfile(inputshpfile,field_name):
    """Adds a text field to  the input shpfile
    inputshpfile: (str)
    outputshpfile: (str)"""
    arcpy.AddField_management(inputshpfile,field_name,"TEXT", "", "", "90", "", "NON_NULLABLE", "NON_REQUIRED", "")
+
+
+@timer
+def add_several_textattributes(inputshpfile,fieldnames_list):
+    for field_name in fieldnames_list:
+        add_textattribute2shpfile(inputshpfile,field_name)
 
 
 @timer
@@ -97,6 +108,14 @@ def add_longattribute2shpfile(inputshpfile,field_name):
 
 
 @timer
+def add_numattribute2shpfile(inputshpfile,field_name):
+   """Adds a text field to  the input shpfile
+   inputshpfile: (str)
+   outputshpfile: (str)"""
+   arcpy.AddField_management(inputshpfile,field_name,"FLOAT", "", "", "90", "", "NON_NULLABLE", "NON_REQUIRED", "")
+
+
+@timer
 def add_idfield2shpfile(inputshpfile,field_name):
     add_longattribute2shpfile(inputshpfile,field_name)
     def add_increasingint():  
@@ -114,6 +133,11 @@ def add_idfield2shpfile(inputshpfile,field_name):
 
 
 @timer
+def get_georeference(reference):
+    return arcpy.SpatialReference(reference)
+    
+
+@timer
 def set_georeference(inputshpfile,reference):
      arcpy.DefineProjection_management(inputshpfile, arcpy.SpatialReference(reference))
 
@@ -125,6 +149,7 @@ def sort_shpfilebyidfield(inputshpfile,outputshpfile,intfield,desc=False):
         arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "DESCENDING"]])
     else:
         arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "ASCENDING"]])
+    set_georeference(outputshpfile,GeoReferences["Portugal_ArcGIS"])
 
 
 @timer
@@ -132,10 +157,21 @@ def list_fieldsInshpfile(shpfile):
     fields_list = [field.name for field in arcpy.ListFields(shpfile)]
     return fields_list
 
+
 @timer
 def discard_fieldsInshpfile(inputshpfile,fieldstrings_list):
     arcpy.DeleteField_management(inputshpfile,fieldstrings_list)
 
+
+@timer
+def copy_fields(inputshpfile,src_field,dst_field):
+    arcpy.CalculateField_management(inputshpfile, dst_field, "!"+src_field+"!", "PYTHON_9.3", "")
+
+
+@timer
+def rename_existentfield(inputshpfile,src_field,dst_field):
+    copy_fields(inputshpfile,src_field,dst_field)
+    discard_fieldsInshpfile(inputshpfile,[src_field])
 
 
 
