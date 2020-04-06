@@ -31,9 +31,9 @@ def get_georeference(reference):
     return arcpy.SpatialReference(reference)
 
 #######Add start_x,start_y,end_x,end_y fields to each row ###############
-pontos_shpfile=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_ZoneGraded\Points_Parsed_ZoneGraded.shp"
-pontos_shpfile_upsidedown=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_ZoneGraded\Points_Parsed_ZoneGraded.shp"
-pontos_shpfile_=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_Coded\Points_Parsed_Coded.shp"
+pontos_shpfile=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_Zone\Points_Parsed_Zone.shp"
+pontos_shpfile_upsidedown=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_Zone\Points_Parsed_Zone.shp"
+pontos_shpfile_=r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Points_Parsed_Summary\Points_Parsed_Summary.shp"
 
 add_numattribute2shpfile(pontos_shpfile,'start_x')
 add_numattribute2shpfile(pontos_shpfile,'start_y')

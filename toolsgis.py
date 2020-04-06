@@ -17,7 +17,6 @@ def convert_shpfile2convexhull(inputshpfile,outputshpfile):
    
    arcpy.management.MinimumBoundingGeometry(inputshpfile, outputshpfile, 
                                                      "CONVEX_HULL", "ALL")
-   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06")
  
 
 @timer
@@ -27,7 +26,7 @@ def buffer_shpfiles(inputshpfile,outputshpfile,buffersize):
    outputshpfile: (str)
    buffersize: (int)"""
    arcpy.analysis.Buffer(inputshpfile,outputshpfile,str(buffersize) + ' METERS', "FULL", "ROUND", "NONE")  
-   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06") 
+
 
 
 @timer
@@ -36,14 +35,14 @@ def merge_shpfiles(inputshpfilpath_list,outputshpfile):
       inputshpfilpath_list: (list of str)
       outputshpfile: (str)"""
    arcpy.management.Merge(inputshpfilpath_list, outputshpfile)
-   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06")
+
 
 
 @timer
 def spatialjoin_shpfiles(inputshpfiletobeclassified,inputshpfilewithcode,outputshpfile):
    """It is a type of intersection, that handles shp files of different types. We use it to classify the points"""
    arcpy.analysis.SpatialJoin(inputshpfiletobeclassified, inputshpfilewithcode, outputshpfile)
-   set_georeference(outputshpfile,"ETRS 1989 Portugal TM06")
+
 
 
 @timer
@@ -52,7 +51,7 @@ def convert_points2line(inputpointsshpfile,outputlineshpfilepath,line_field=None
    inputshpfile: (str)
    outputshpfile: (str)"""
    arcpy.PointsToLine_management(inputpointsshpfile,outputlineshpfilepath,Line_Field = line_field)
-   set_georeference(outputlineshpfilepath,"ETRS 1989 Portugal TM06")
+
 
 
 @timer
@@ -149,7 +148,6 @@ def sort_shpfilebyidfield(inputshpfile,outputshpfile,intfield,desc=False):
         arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "DESCENDING"]])
     else:
         arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "ASCENDING"]])
-    set_georeference(outputshpfile,GeoReferences["Portugal_ArcGIS"])
 
 
 @timer

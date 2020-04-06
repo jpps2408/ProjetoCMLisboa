@@ -74,72 +74,44 @@ class ShiftDir(object):
                    "children" : None},
 
                   {
-                   "namestandard": "Points_Parsed_ZoneGraded",
-                   "alias": "Points_Parsed_ZoneGraded",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Points_Parsed_ZoneGraded.shp":"Points_Parsed_ZoneGraded.shp"},
+                   "namestandard": "Points_Parsed_Zone",
+                   "alias": "Points_Parsed_Zone",
+                   "filesystem": {"Points_Parsed_Zone.shp":"Points_Parsed_Zone.shp"},
                    "children" : None}, 
                   
                   {
-                   "namestandard": "Points_NotParsed_ZoneGraded",
-                   "alias": "Points_NotParsed_ZoneGraded",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Points_NotParsed_ZoneGraded.shp":"Points_NotParsed_ZoneGraded.shp"},
+                   "namestandard": "Points_NotParsed_Zone",
+                   "alias": "Points_NotParsed_Zone",
+                   "filesystem": {"Points_NotParsed_Zone.shp":"Points_NotParsed_Zone.shp"},
                    "children" : None},
-
-                   {
-                   "namestandard": "Transitions",
-                   "alias": "Transitions",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Transitions.csv":"Transitions.csv"},
-                   "children" : None},
-
-                   {
-                   "namestandard": "Points_Parsed_Coded",
-                   "alias": "Points_Parsed_Coded",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Points_Parsed_Coded.shp":"Points_Parsed_Coded.shp"},
-                   "children" : None},
-                  
 
                   {
-                   "namestandard": "Line_Unmerged_Even",
-                   "alias": "Line_Unmerged_Even",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Unmerged_Even.shp":"Line_Unmerged_Even.shp"},
+                   "namestandard": "Points_Parsed_Flipped",
+                   "alias": "Points_Parsed_Flipped",
+                   "filesystem": {"Points_Parsed_Flipped.shp":"Points_Parsed_Flipped.shp"},
                    "children" : None},
 
                     {
-                   "namestandard": "Line_Unmerged_Odd",
-                   "alias": "Line_Unmerged_Odd",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Unmerged_Odd.shp":"Line_Unmerged_Odd.shp"},
-                   "children" : None},
-                                      
-                  {
-                   "namestandard": "Line_Merged_NotGraded",
-                   "alias": "Line_Merged_NotGraded",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Merged_NotGraded.shp":"Line_Merged_NotGraded.shp"},
+                   "namestandard": "Line_Sections",
+                   "alias": "Line_Sections",
+                   "filesystem": {"Line_Sections.shp":"Line_Sections.shp"},
                    "children" : None},
 
                     {
-                   "namestandard": "Line_Separate_NotCoded",
-                   "alias": "Line_Separate_NotCoded",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Separate_NotCoded.shp":"Line_Separate_NotCoded.shp"},
+                   "namestandard": "Points_Parsed_Guided",
+                   "alias": "Points_Parsed_Summary",
+                   "filesystem": {"Points_Parsed_Summary.shp":"Points_Parsed_Summary.shp"},
                    "children" : None},
-                   {
-                   "namestandard": "Line_Separate_Coded",
-                   "alias": "Line_Separate_Coded",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"Line_Separate_Coded.shp":"Line_Separate_Coded.shp"},
+                                     
+                    {
+                   "namestandard": "Line_Sections_Guided",
+                   "alias": "Line_Sections",
+                   "filesystem": {"Line_Sections.shp":"Line_Sections.shp"},
                    "children" : None},
-                                                         
+
                   {
                    "namestandard": "Circuit_Near_Line",
                    "alias": "Circuit_Near_Line",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
                    "filesystem": {"Circuit_Near_Line.shp":"Circuit_Near_Line.shp"},
                    "children" : None}]
                    
@@ -198,61 +170,51 @@ class ShiftDir(object):
         self.parse_field()
         self.get_timereports()
         self.create_singlelinewithpoints()
-        
+        self.create_singlelinewithpoints()
     
+
+
 
 
 
     @timer
     def create_singlelinewithpoints(self):
-        singleline_even = self.shiftpaths['ShiftName']['Products']['Line_Unmerged_Even']['filepathdicts']['Line_Unmerged_Even.shp']
-        singleline_odd= self.shiftpaths['ShiftName']['Products']['Line_Unmerged_Odd']['filepathdicts']['Line_Unmerged_Odd.shp']
-        singleline = self.shiftpaths['ShiftName']['Products']['Line_Merged_NotGraded']['filepathdicts']['Line_Merged_NotGraded.shp']
-        splittedlinenotgraded = self.shiftpaths['ShiftName']['Products']['Line_Separate_NotCoded']['filepathdicts']['Line_Separate_NotCoded.shp']
-        splittedlinegraded = self.shiftpaths['ShiftName']['Products']['Line_Separate_Coded']['filepathdicts']['Line_Separate_Coded.shp']
-        points = self.shiftpaths['ShiftName']['Products']['Points_Parsed_ZoneGraded']['filepathdicts']['Points_Parsed_ZoneGraded.shp']
+        line_sections= self.shiftpaths['ShiftName']['Products']['Line_Sections']['filepathdicts']['Line_Sections.shp']
+        points = self.shiftpaths['ShiftName']['Products']['Points_Parsed_Zone']['filepathdicts']['Points_Parsed_Zone.shp']
+        points_upsidedown = self.shiftpaths['ShiftName']['Products']['Points_Parsed_Flipped']['filepathdicts']['Points_Parsed_Flipped.shp']
         
+        set_georeference(points,"ETRS 1989 Portugal TM06")
+        add_attribute2shpfile(points,attribute="POINT_X_Y_Z_M")
 
+        add_numattribute2shpfile(points,'start_x')
+        add_numattribute2shpfile(points,'start_y')
+        add_numattribute2shpfile(points,'end_x')
+        add_numattribute2shpfile(points,'end_y')
+        copy_fields(points,"POINT_X","start_x")
+        copy_fields(points,"POINT_y","start_y")
+
+        sort_shpfilebyidfield(points,points_upsidedown,self.Field_Names_Points["SERIAL_ID"],True)
+        nrrows = str(int(arcpy.GetCount_management(points).getOutput(0)) -1)
+
+        #get the first row, but since it is inverted we get the row whose serial number is largest
+        field_names = ['start_x','start_y','end_x','end_y']
+        with arcpy.da.UpdateCursor(points_upsidedown,field_names,where_clause = "SERIAL="+nrrows) as cursor:
+            for row in cursor:
+                prev_row = row
+                break
         
-        @timer
-        def update_lists(shpfile):
-            nrrows = int(arcpy.GetCount_management(shpfile).getOutput(0))
-            save_1 = []
-            for num in range(nrrows/2):
-               save_1.append(num) 
-               save_1.append(num)
-            save_2 = save_1[:]
-            save_2.insert(0,-1)
-            if nrrows%2 == 0:
-                save_2.pop(-1)
-            else:
-                save_1.append(-1)
-            return save_1,save_2
         
+        #update the end x and end y
+        with arcpy.da.UpdateCursor(points_upsidedown,field_names) as cursor:
+            for row in cursor:
+                row[field_names.index('end_x')] = prev_row[field_names.index('start_x')]
+                row[field_names.index('end_y')] = prev_row[field_names.index('start_y')]
+                prev_row = row
+                cursor.updateRow(row)
 
-        even_list,odd_list = update_lists(points)
-        field_names_dict = {"AUX_LINE_EVEN":"AUX_EVEN","AUX_LINE_ODD":"AUX_ODD"}
-        even_name = field_names_dict["AUX_LINE_EVEN"]
-        odd_name = field_names_dict["AUX_LINE_ODD"]
-        add_longattribute2shpfile(points,even_name)
-        add_longattribute2shpfile(points,odd_name)
-
-        field_names = [even_name,odd_name]
-        i=0
-        with arcpy.da.UpdateCursor(points,field_names) as cursor:
-           for row in cursor:
-              row[field_names.index(even_name)] = even_list[i]
-              row[field_names.index(odd_name)] = odd_list[i]
-              i+=1
-              cursor.updateRow(row)
-
-        convert_points2line(points,singleline_even,field_names_dict["AUX_LINE_EVEN"])
-        add_attribute2shpfile(singleline_even)
-        convert_points2line(points,singleline_odd,field_names_dict["AUX_LINE_ODD"])
-        add_attribute2shpfile(singleline_odd)
-        merge_shpfiles([singleline_even,singleline_odd],singleline)
-        spatialjoin_shpfiles(singleline,points,splittedlinegraded)
-
+        sr = get_georeference("ETRS 1989 Portugal TM06")
+        sort_shpfilebyidfield(points_upsidedown,points,"SERIAL",False)
+        arcpy.XYToLine_management(points,line_sections,"start_x","start_y","end_x","end_y",spatial_reference = sr)
 
 
 
@@ -275,12 +237,12 @@ class ShiftDir(object):
         ligacao_str = self.zone_classification['CONNECTION']
 
         #get the two fielpaths to that contains the non parsed points and the parsed poitns
-        pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
-        pointsparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["filepathdicts"]["Points_Parsed_ZoneGraded.shp"]
+        pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_Zone"]["filepathdicts"]["Points_NotParsed_Zone.shp"]
+        pointsparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_Zone"]["filepathdicts"]["Points_Parsed_Zone.shp"]
         #copy the directory where the non parsed points are
-        copy_directory(self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["path"],self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"])
+        copy_directory(self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_Zone"]["path"],self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_Zone"]["path"])
         #rename all of the files in the folder (they were copied and need renaming)
-        rename_shpfiles(self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_ZoneGraded"]["path"],
+        rename_shpfiles(self.shiftpaths["ShiftName"]["Products"]["Points_Parsed_Zone"]["path"],
                      os.path.splitext(os.path.basename(pointsnotparsedzonegraded))[0],
                      os.path.splitext(os.path.basename(pointsparsedzonegraded))[0])
         
@@ -367,7 +329,7 @@ class ShiftDir(object):
         points = self.shiftpaths["ShiftName"]["SHP"]["SHPmerged"]["filepathdicts"]["SHPmerged.shp"]
         polygon = self.shiftpaths["ShiftName"]["Products"]["CircuitPolygon"]["filepathdicts"]["CircuitPolygon.shp"]
 
-        pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_ZoneGraded"]["filepathdicts"]["Points_NotParsed_ZoneGraded.shp"]
+        pointsnotparsedzonegraded = self.shiftpaths["ShiftName"]["Products"]["Points_NotParsed_Zone"]["filepathdicts"]["Points_NotParsed_Zone.shp"]
         spatialjoin_shpfiles(points,polygon,pointsnotparsedzonegraded)
         deletefieldnames = self.Field_Names_Points["Delete"]
         discard_fieldsInshpfile(pointsnotparsedzonegraded,deletefieldnames)
