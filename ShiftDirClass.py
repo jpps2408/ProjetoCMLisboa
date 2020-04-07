@@ -8,44 +8,16 @@ import shutil as sh
 
 class ShiftDir(object):
 
-    
-    Cartrack = {"SplitSep":'<br></br>',
-                "CarTrackTimeFieldName":"Time: ",
-                "TimeStampWithoutUTCOffset": (6,25),
-                "UTCOffset": (26,28)}
 
-    Mission_Codes_Macro = {
-                     "S2P":("G","P"),
-                     "P2P":("P","P"),
-                     "P2C":("P","C"),
-                     "C2C":("C","C"),
-                     "C2P":("C","P"),
-                     "C2T":("C","G")}
-
-
-    Mission_Codes_Micro = {
-                     "S2P":("G","P"),
-                     "P2P":("P","P"),
-                     "P2C":("P","C"),
-                     "C2C":("C","C"),
-                     "C2P":("C","P"),
-                     "C2T":("C","G")}
     
     def __init__(self, shiftdirectory, CircuitDirObject ,*args, **kwargs):
 
-            self.create_metrics_dicts()
             self.processedpolygonspaths = CircuitDirObject.ProcessedPolygon.processedpolygonspaths
             self.circuitobject = CircuitDirObject
-            self.zone_abbreviation = {
-                    self.circuitobject.zone_classification['GARAGE']:"G",
-                    self.circuitobject.zone_classification['CIRCUIT']:"R",
-                    self.circuitobject.zone_classification['UNLOADING']:"C",
-                    self.circuitobject.zone_classification['CONNECTION']:"L"}
             self.Field_Names_Groupby = {}
             self.shiftdirectory = os.path.abspath(shiftdirectory)
             self.pardir = os.path.abspath(os.path.join(shiftdirectory,os.path.pardir))
-            self.Fields_Numbers["CIRCUIT"] = CircuitDirObject.circuito
-            self.Fields_Numbers["SHIFT"] = os.path.basename(self.shiftdirectory)
+            self.create_metrics_dicts()
             self.setShiftPaths()
 
     
@@ -56,7 +28,7 @@ class ShiftDir(object):
         shiftJSONDIR = {
         ########Layer 0 #########
         "namestandard": "ShiftName",
-        "alias": self.Fields_Numbers["SHIFT"],
+        "alias": os.path.basename(self.shiftdirectory),
         "filesystem": None,
         "children" :
          ########BEGIN Layer 1 #########
@@ -72,7 +44,6 @@ class ShiftDir(object):
                    {
                    "namestandard": "Circuit_Polygon_Original",
                    "alias": "Circuit_Polygon_Original",
-                   #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
                    "filesystem": {"Circuit_Polygon_Original.shp":"Circuit_Polygon_Original.shp"},
                    "children" : None},
 
@@ -159,12 +130,7 @@ class ShiftDir(object):
         shiftpathsobject = DictionaryExplorer(self.pardir)
         self.shiftpaths = shiftpathsobject.recursive_dictglobalexplorer(shiftJSONDIR)
 
-        self.Fields_Table_Parsed = {"Delete":["Name","TARGET_FID","Join_Count","Id","ORIG_FID"],
-                              "SERIAL_ID":"SERIAL",
-                              "SINGLESTRING":"descrp",
-                              "TIME":"timestamp",
-                              "ZONE": self.circuitobject.zone_classification["CODE_FIELD_NAME"],
-                              "BLOCK_ID":"BLOCK_ID"}
+
 
 
 
@@ -174,49 +140,121 @@ class ShiftDir(object):
     
     def create_metrics_dicts(self):
         
-        self.Fields_Display={"CIRCUIT":"CIRCUITO",
+        self.Fields_Table_Parsed = {"Delete":["Name","TARGET_FID","Join_Count","Id","ORIG_FID"],
+                                  "SERIAL_ID":"SERIAL",
+                                  "SINGLESTRING":"descrp",
+                                  "TIME":"timestamp",
+                                  "ZONE": self.circuitobject.zone_classification["CODE_FIELD_NAME"],
+                                  "BLOCK_ID":"BLOCK_ID"}
+
+            
+        self.Cartrack = {"SplitSep":'<br></br>',
+                    "CarTrackTimeFieldName":"Time: ",
+                    "TimeStampWithoutUTCOffset": (6,25),
+                    "UTCOffset": (26,28)}
+
+
+        self.Mission_Codes_Macro = {
+                         "S2P":("G","P"),
+                         "P2P":("P","P"),
+                         "P2C":("P","C"),
+                         "C2C":("C","C"),
+                         "C2P":("C","P"),
+                         "C2T":("C","G")}
+
+        self.Mission_Codes_Micro = {
+                         "S2P":("G","P"),
+                         "P2P":("P","P"),
+                         "P2C":("P","C"),
+                         "C2C":("C","C"),
+                         "C2P":("C","P"),
+                         "C2T":("C","G")}
+
+        
+        self.zone_abbreviation = {
+                    self.circuitobject.zone_classification['GARAGE']:"G",
+                    self.circuitobject.zone_classification['CIRCUIT']:"R",
+                    self.circuitobject.zone_classification['UNLOADING']:"C",
+                    self.circuitobject.zone_classification['CONNECTION']:"L"}
+
+        self.Fields_Display={"CIRCUIT_ID":"CIRCUITO",
                              "SHIFT":"PERCURSO",
                              "START_TIME":"H_INICIO",
                              "END_TIME":"H_FIM",
-                             "CIRCUIT_TOLERANCE":"PARAMETRO_CIRCUITO",
-                             "VISITED_TOLERANCE":"PARAMETRO_VISITADOS",
+                             "UNLOADING_LASTTIME":"DESCARGA",
+                             "CIRCUIT_TOLERANCE":"PARAMETRO_CIRCUITO (m)",
+                             "VISITED_TOLERANCE":"PARAMETRO_VISITADOS (m)",
                              "ABSOLUTE_VISITED_STOPS":"NR_VISITADOS",
                              "RELATIVE_VISITED_STOPS":"%_VISITADOS",
                              "ABSOLUTE_IGNORED_STOPS":"NR_IGNORADOS",
                              "RELATIVE_IGNORED_STOPS":"%_IGNORADOS",
-                             "GARAGE_TIME":"TEMP_GARAGEM",
-                             "GARAGE_DIST":"DIST_GARAGEM",
-                             "UNLOADING_TIME":"TEMP_DESCARGA",
-                             "UNLOADING_DIST":"DIST_DESCARGA",
-                             "CIRCUIT_TIME":"TEMP_RECOLHA",
-                             "CIRCUIT_DIST":"DIST_RECOLHA",
-                             "CONNECTION_TIME":"TEMP_LIGACAO",
-                             "CONNECTION_DIST":"DIST_LIGACAO",
-                             "OTHERS_TIME":"TEMP_OUTROS",
-                             "OTHERS_DIST":"DIST_OUTROS"}
+                             "TOTAL_TIME":"TEMPO_TOTAL (h)",
+                             "TOTAL_DIST":"DIST_TOTAL (km)",
+                             "GARAGE_TIME":"TEMP_GARAGEM (h)",
+                             "GARAGE_DIST":"DIST_GARAGEM (km)",
+                             "GARAGE_VELOCITY":"VELOCIDADE_GARAGEM (km/h)",
+                             "UNLOADING_TIME":"TEMP_DESCARGA (h)",
+                             "UNLOADING_DIST":"DIST_DESCARGA (km)",
+                             "UNLOADING_VELOCITY":"VELOCIDADE_DESCARGA (km/h)",
+                             "CIRCUIT_TIME":"TEMP_RECOLHA (h)",
+                             "CIRCUIT_DIST":"DIST_RECOLHA (km)",
+                             "CIRCUIT_VELOCITY":"VELOCIDADE_RECOLHA (km/h)",
+                             "CONNECTION_TIME":"TEMP_LIGACAO (h)",
+                             "CONNECTION_DIST":"DIST_LIGACAO (km)",
+                             "CONNECTION_VELOCITY":"VELOCIDADE_LIGACAO (km/h)",
+                             "OTHERS_TIME":"TEMP_OUTROS (h)",
+                             "OTHERS_DIST":"DIST_OUTROS (km)",
+                             "OTHERS_SPEED":"VELOCIDADE_OUTROS (km/h)"}
 
-        self.Fields_Numbers={"CIRCUIT":None,
-                    "SHIFT":None,
-                    "START_TIME":None,
-                    "END_TIME":None,
-                    "CIRCUIT_TOLERANCE":None,
-                    "VISITED_TOLERANCE":None,
-                    "ABSOLUTE_VISITED_STOPS":None,
-                    "RELATIVE_VISITED_STOPS":None,
-                    "ABSOLUTE_IGNORED_STOPS":None,
-                    "RELATIVE_IGNORED_STOPS":None,
-                    "GARAGE_TIME":None,
-                    "GARAGE_DIST":None,
-                    "UNLOADING_TIME":None,
-                    "UNLOADING_DIST":None,
-                    "CIRCUIT_TIME":None,
-                    "CIRCUIT_DIST":None,
-                    "CONNECTION_TIME":None,
-                    "CONNECTION_DIST":None,
-                    "OTHERS_TIME":None,
-                    "OTHERS_DIST":None}
 
-        
+
+        self.Fields_Numbers={_ : None for _ in self.Fields_Display.keys()}
+        self.Fields_Numbers["SHIFT"] = os.path.basename(self.shiftdirectory)
+        self.Fields_Numbers.update(self.circuitobject.circuitdict)
+
+
+        self.order =["CIRCUIT_ID",
+                     "SHIFT",
+                     "START_TIME","END_TIME","UNLOADING_LASTTIME",
+                     "CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
+                     "TOTAL_TIME","TOTAL_DIST",
+                     "ABSOLUTE_VISITED_STOPS", "RELATIVE_VISITED_STOPS",
+                     "ABSOLUTE_IGNORED_STOPS","RELATIVE_IGNORED_STOPS",
+                     "GARAGE_TIME","GARAGE_DIST","GARAGE_VELOCITY",
+                     "UNLOADING_TIME","UNLOADING_DIST","UNLOADING_VELOCITY",
+                     "CIRCUIT_TIME","CIRCUIT_DIST","CIRCUIT_VELOCITY",
+                     "CONNECTION_TIME","CONNECTION_DIST","CONNECTION_VELOCITY",
+                     "OTHERS_TIME","OTHERS_DIST"]
+
+        self.zone_velfieldmapping = {
+                    self.circuitobject.zone_classification['GARAGE']:"GARAGE_VELOCITY",
+                    self.circuitobject.zone_classification['CIRCUIT']:"CIRCUIT_VELOCITY",
+                    self.circuitobject.zone_classification['UNLOADING']:"UNLOADING_VELOCITY",
+                    self.circuitobject.zone_classification['CONNECTION']:"CONNECTION_VELOCITY"}
+        self.zone_timefieldmapping = {
+                    self.circuitobject.zone_classification['GARAGE']:"GARAGE_TIME",
+                    self.circuitobject.zone_classification['CIRCUIT']:"CIRCUIT_TIME",
+                    self.circuitobject.zone_classification['UNLOADING']:"UNLOADING_TIME",
+                    self.circuitobject.zone_classification['CONNECTION']:"CONNECTION_TIME"}
+        self.zone_displfieldmapping = {
+                    self.circuitobject.zone_classification['GARAGE']:"GARAGE_DIST",
+                    self.circuitobject.zone_classification['CIRCUIT']:"CIRCUIT_DIST",
+                    self.circuitobject.zone_classification['UNLOADING']:"UNLOADING_DIST",
+                    self.circuitobject.zone_classification['CONNECTION']:"CONNECTION_DIST"}
+
+
+        #Create the fieldnames that completely describe a circuit, by blocks of chronologically contiguous points that have the same classification        
+        #create a transitions dictionary of lists. Note that this is defined inside a class method because if it was
+        #defined outside a class method bu inside a class body, it would be a class variable and hence if we changed 
+        #the instance we were dealing with we would get the same transition lists throughout all of the living objects/instances 
+        self.Field_Names_Groupby ={"INI_SERIAL":[],
+                                   "FIN_SERIAL":[],
+                                   "TIME":[],
+                                   "INTERVAL":[],
+                                   "HOURS":[],
+                                   "ZONE":[], 
+                                   "BLOCK_ID":[],
+                                   "DISPLACEMENT":[]}
 
     @timer
     def process_shift(self,buffersize):
@@ -233,13 +271,8 @@ class ShiftDir(object):
     @timer
     def generate_reports(self):
         
-        order =["CIRCUIT","SHIFT","START_TIME","END_TIME","CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
-                "ABSOLUTE_VISITED_STOPS", "RELATIVE_VISITED_STOPS","ABSOLUTE_IGNORED_STOPS",
-                "RELATIVE_IGNORED_STOPS","GARAGE_TIME","GARAGE_DIST","UNLOADING_TIME",
-                "UNLOADING_DIST","CIRCUIT_TIME","CIRCUIT_DIST","CONNECTION_TIME",
-                "CONNECTION_DIST","OTHERS_TIME","OTHERS_DIST"]
-        Columns = [self.Fields_Display[key] for key in order]
-        Row = [self.Fields_Numbers[key] for key in order]
+        Columns = [self.Fields_Display[key] for key in self.order]
+        Row = [self.Fields_Numbers[key] for key in self.order]
 
         f = pd.DataFrame([Row], columns=Columns)
         f.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
@@ -276,6 +309,7 @@ class ShiftDir(object):
            
     @timer 
     def _join_linewithstaticstops(self,buffersize):
+        self.Fields_Numbers['VISITED_TOLERANCE'] = buffersize
         line_sole = self.shiftpaths['ShiftName']['Products']['Line_Sole']['filepathdicts']['Line_Sole.shp']
         line_buffered = self.shiftpaths['ShiftName']['Products']['Line_Buffered']['filepathdicts']['Line_Buffered.shp']
         prs_shpfile = self.circuitobject.circuitpaths["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"]
@@ -283,16 +317,34 @@ class ShiftDir(object):
         buffer_shpfiles(line_sole,line_buffered,buffersize)
         spatialjoin_shpfiles(prs_shpfile,line_buffered,near_shpfile)
 
-
+    
     @timer
     def _get_abrupts_reports(self):
         df = pd.DataFrame(self.Field_Names_Groupby)
         fieldnames=["INI_SERIAL","FIN_SERIAL","BLOCK_ID","TIME","ZONE","INTERVAL","HOURS","DISPLACEMENT"]
         df = df[fieldnames]
-        df.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_History.csv"],sep=';')
+        self._get_zstats(df)
+        #df.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_History.csv"],sep=';')
+        
 
+    @timer
+    def _get_zstats(self,df):
+        m2km = 10**(-3)
+        fieldnames = ["ZONE"]
+        df_groupby = df.groupby(fieldnames)["HOURS","DISPLACEMENT"].sum()
+        zones = df_groupby.index.values
+        hours = df_groupby["HOURS"].values
+        displacements = df_groupby["DISPLACEMENT"].values
+        for i,zone in enumerate(zones):
+            rounded_hour = round(hours[i],3)
+            rounded_displacement = round(displacements[i],1)*m2km
+            self.Fields_Numbers[self.zone_timefieldmapping[zone]] = rounded_hour
+            self.Fields_Numbers[self.zone_displfieldmapping[zone]] = rounded_displacement
+            speed = rounded_displacement/rounded_hour
+            self.Fields_Numbers[self.zone_velfieldmapping[zone]] = round(speed,2)
+        self.Fields_Numbers['TOTAL_TIME'] = round(df["HOURS"].sum(),2)
+        self.Fields_Numbers['TOTAL_DIST'] = round(df["DISPLACEMENT"].sum(),1)*m2km
 
-    
 
     @timer
     def create_singlelinewithpoints(self):
@@ -330,6 +382,14 @@ class ShiftDir(object):
     
 
 
+
+
+
+
+
+
+
+
     @timer    
     def parse_field(self):
         #assign fieldnames strings to variables
@@ -354,30 +414,24 @@ class ShiftDir(object):
                      os.path.splitext(os.path.basename(pointsparsedzonegraded))[0])
         
         add_longattribute2shpfile(pointsparsedzonegraded,block_id)
-        #get a transitions dictionary of lists. Note that this is defined inside a class method because if it was
-        #defined outside a class method bu inside a class body, it would be a class variable and hence if we changed 
-        #the instance we were dealing with we would get the same transition lists throughout all of the living objects/instances 
+        
         previous_place = ""
+        self.Field_Names_Groupby["ZONE"].append(previous_place)
 
         #Create the fieldnames that completely describe a circuit, by blocks of chronologically contiguous points that have the same classification
-        Field_Names_Groupby = {"INI_SERIAL":np.array([]),
-                               "FIN_SERIAL":np.array([]),
-                               "TIME":np.array([]),
-                               "INTERVAL":np.array([]),
-                               "HOURS":np.array([]),
-                               "ZONE":np.array([previous_place]), 
-                               "BLOCK_ID":np.array([]),
-                               "DISPLACEMENT":np.array([])}
+        Fields_Numbers = self.Fields_Numbers
+        Field_Names_Groupby = self.Field_Names_Groupby
         
+
         #Update the Field Names with the row contents in order to 
         def update_Field_Names_Groupby(row):
-           np.append(Field_Names_Groupby["INI_SERIAL"],row[field_names.index(serial_id)])
-           np.append(Field_Names_Groupby["TIME"],row[field_names.index(time)])
-           np.append(Field_Names_Groupby["ZONE"],row[field_names.index(zone)])
+           Field_Names_Groupby["INI_SERIAL"].append(row[field_names.index(serial_id)])
+           Field_Names_Groupby["TIME"].append(row[field_names.index(time)])
+           Field_Names_Groupby["ZONE"].append(row[field_names.index(zone)])
            #then we get the number of the current row -1 to get the last row of the previous block 
-           np.append(Field_Names_Groupby["FIN_SERIAL"],row[field_names.index(serial_id)]-1)
+           Field_Names_Groupby["FIN_SERIAL"].append(row[field_names.index(serial_id)]-1)
            #append a block count each time a transition is reached
-           np.append(Field_Names_Groupby["BLOCK_ID"],block_count)
+           Field_Names_Groupby["BLOCK_ID"].append(block_count)
 
         
         block_count = 0
@@ -403,28 +457,40 @@ class ShiftDir(object):
         
 
         #Append the last row id to the last group fin_serial list, as this is the last point corresponding to the last block
-        np.append(Field_Names_Groupby["FIN_SERIAL"],row[field_names.index(serial_id)])
+        Field_Names_Groupby["FIN_SERIAL"].append(row[field_names.index(serial_id)])
         #Discard the first list element since the get_place() returned True in the transition "" to the first zone
         Field_Names_Groupby["FIN_SERIAL"] = Field_Names_Groupby["FIN_SERIAL"][1:]
         Field_Names_Groupby["ZONE"] = Field_Names_Groupby["ZONE"][1:]
 
 
         end_time = Field_Names_Groupby["TIME"][1:]
-        np.append(end_time,row[field_names.index("timestamp")])
+        end_time.append(row[field_names.index("timestamp")])
         start = Field_Names_Groupby["TIME"]
         Field_Names_Groupby["INTERVAL"] = subtract_oneforwardtime(start,end_time)
-        Field_Names_Groupby["HOURS"] = string2hour(Field_Names_Groupby["INTERVAL"])
-        self.Fields_Numbers["START_TIME"] = Field_Names_Groupby["TIME"][0]
-        self.Fields_Numbers["END_TIME"] = row[field_names.index("timestamp")]
+        Field_Names_Groupby["HOURS"] = map(string2hour,Field_Names_Groupby["INTERVAL"])
+        Fields_Numbers["START_TIME"] = Field_Names_Groupby["TIME"][0]
+        Fields_Numbers["END_TIME"] = row[field_names.index("timestamp")]
+
+        aux_zone = Field_Names_Groupby["ZONE"][:]
+        #aux_zone.reverse()
+        last_timeunloadingbegan_index = aux_zone.index(self.circuitobject.zone_classification['UNLOADING'])
+        last_timeunloadingbegan_index = len(Field_Names_Groupby["ZONE"][:]) - last_timeunloadingbegan_index
+        Fields_Numbers["UNLOADING_LASTTIME"] = Field_Names_Groupby["TIME"][last_timeunloadingbegan_index]
+
+        self.Fields_Numbers = Fields_Numbers
         self.Field_Names_Groupby = Field_Names_Groupby
     
+
+
+
+
+
 
 
 
     @signal 
     def _replace_emptyspacewithligacao(self,fieldzone_value,code_value):
             return replace_bymatchorkeep(" ",fieldzone_value, code_value)     
-
 
     @signal
     def _Cartrack2Time(self,descriptionstring):
@@ -450,6 +516,9 @@ class ShiftDir(object):
 
 
 
+
+
+
     @signal
     def _join_pointswithpolygon(self):
         self._copy_mergedppolygon()
@@ -464,6 +533,9 @@ class ShiftDir(object):
     
 
 
+
+
+
     @signal
     def _copy_mergedppolygon(self):
         self._convert_kml2shp()
@@ -471,6 +543,10 @@ class ShiftDir(object):
         old_basename,_ = os.path.splitext(os.path.basename(self.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["filepathdicts"]["SingleObjectBuffered.shp"]))
         new_basename,_ = os.path.splitext(os.path.basename(self.shiftpaths["ShiftName"]["Products"]["Circuit_Polygon_Original"]["filepathdicts"]["Circuit_Polygon_Original.shp"]))
         rename_shpfiles(self.shiftpaths["ShiftName"]["Products"]["Circuit_Polygon_Original"]["path"],old_basename,new_basename)
+
+
+
+
 
 
     @signal

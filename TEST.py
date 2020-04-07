@@ -49,5 +49,8 @@ order =["CIRCUIT","SHIFT","START_TIME","END_TIME","CIRCUIT_TOLERANCE","VISITED_T
 Columns = [Fields_Display[key] for key in order]
 Row = [Fields_Numbers[key] for key in order]
 
-
-series = pd.DataFrame([Row], columns=Columns)
+import pandas as pd
+csv_path = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\I0104_V2520_17_01_2020\ReportAnalysis\Time_History.csv"
+df = pd.read_csv(csv_path,sep=";")
+fieldnames = ["ZONE"]
+df_groupby = df.groupby(fieldnames)["HOURS","DISPLACEMENT"].sum()

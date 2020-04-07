@@ -18,6 +18,7 @@ class CircuitDir(object):
         self.circuitdirectory = os.path.abspath(circuitdirectory)
         self.circuito = os.path.basename(self.circuitdirectory)
         self.pardir = os.path.abspath(os.path.join(circuitdirectory,os.path.pardir))
+        self._make_circuitdict()
         self.__setCircuitPaths()
     
     def __setCircuitPaths(self):
@@ -25,7 +26,7 @@ class CircuitDir(object):
         CIRCUITJSONDIR = {
         ########Layer 0 #########
         "namestandard": "CircuitName",
-        "alias": self.circuito,
+        "alias": os.path.basename(self.circuitdirectory),
         "filesystem": None,
         "children" :
          ########BEGIN Layer 1 #########
@@ -119,7 +120,9 @@ class CircuitDir(object):
         self.circuitpaths = circuitpathsobject.recursive_dictglobalexplorer(CIRCUITJSONDIR)
         self.__assert_polygonfileexistance()
 
-    
+    def _make_circuitdict(self):
+        self.circuitdict = {"CIRCUIT_ID":os.path.basename(self.circuitdirectory),
+                            "CIRCUIT_TOLERANCE":None}
 
     def getRealizacoesToDo(self):
         path = self.circuitpaths['CircuitName']['CircuitVoyages']['ToDo']['path']
@@ -165,10 +168,9 @@ class CircuitDir(object):
     def make_CircuitBuffer(self,bufferdistance):
         self.zone_classification
         self.classify_polygonshpfiles()
-        self.bufferdistance = bufferdistance
 
         CommonPolygons = self.circuitpaths["CircuitName"]['CircuitPolygons']['CommonPolygons']['path']
-        Polygons_Dir_Name = "MergedPolygons_" + str(self.bufferdistance)
+        Polygons_Dir_Name = "MergedPolygons_" + str(bufferdistance)
 
         Buffered_CircuitArea = os.path.join(CommonPolygons, Polygons_Dir_Name)
         self.ProcessedPolygon = ProcessedPolygonsDir(Buffered_CircuitArea)
@@ -179,8 +181,9 @@ class CircuitDir(object):
         
         buffer_prsarea(Area,
                        AreaBuffered,
-                       self.bufferdistance)
-        
+                       bufferdistance)
+
+        self.circuitdict["CIRCUIT_TOLERANCE"] = bufferdistance
 
     
 
