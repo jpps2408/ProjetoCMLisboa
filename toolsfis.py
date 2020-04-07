@@ -132,6 +132,11 @@ def choosewriteadd(csvpath, data):
         add_line2csv(csvpath,data)
 
 
+def subtract_oneforwardtime(start_time,end_time):
+    start_time_np = string2datetime(start_time)
+    end_time_np = string2datetime(end_time)
+    period_time_np = end_time_np - start_time_np
+    return tinterval_string(period_time_np) 
 
 
 #@timer

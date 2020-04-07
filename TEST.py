@@ -1,52 +1,53 @@
+Fields_Display={"CIRCUIT":"CIRCUITO",
+                             "SHIFT":"PERCURSO",
+                             "START_TIME":"H_INICIO",
+                             "END_TIME":"H_FIM",
+                             "CIRCUIT_TOLERANCE":"PARAMETRO_CIRCUITO",
+                             "VISITED_TOLERANCE":"PARAMETRO_VISITADOS",
+                             "ABSOLUTE_VISITED_STOPS":"NR_VISITADOS",
+                             "RELATIVE_VISITED_STOPS":"%_VISITADOS",
+                             "ABSOLUTE_IGNORED_STOPS":"NR_IGNORADOS",
+                             "RELATIVE_IGNORED_STOPS":"%_IGNORADOS",
+                             "GARAGE_TIME":"TEMP_GARAGEM",
+                             "GARAGE_DIST":"DIST_GARAGEM",
+                             "UNLOADING_TIME":"TEMP_DESCARGA",
+                             "UNLOADING_DIST":"DIST_DESCARGA",
+                             "CIRCUIT_TIME":"TEMP_RECOLHA",
+                             "CIRCUIT_DIST":"DIST_RECOLHA",
+                             "CONNECTION_TIME":"TEMP_LIGACAO",
+                             "CONNECTION_DIST":"DIST_LIGACAO",
+                             "OTHERS_TIME":"TEMP_OUTROS",
+                             "OTHERS_DIST":"DIST_OUTROS"}
+
+Fields_Numbers={"CIRCUIT":None,
+                    "SHIFT":None,
+                    "START_TIME":None,
+                    "END_TIME":None,
+                    "CIRCUIT_TOLERANCE":None,
+                    "VISITED_TOLERANCE":None,
+                    "ABSOLUTE_VISITED_STOPS":None,
+                    "RELATIVE_VISITED_STOPS":None,
+                    "ABSOLUTE_IGNORED_STOPS":None,
+                    "RELATIVE_IGNORED_STOPS":None,
+                    "GARAGE_TIME":None,
+                    "GARAGE_DIST":None,
+                    "UNLOADING_TIME":None,
+                    "UNLOADING_DIST":None,
+                    "CIRCUIT_TIME":None,
+                    "CIRCUIT_DIST":None,
+                    "CONNECTION_TIME":None,
+                    "CONNECTION_DIST":None,
+                    "OTHERS_TIME":None,
+                    "OTHERS_DIST":None}
+
+order =["CIRCUIT","SHIFT","START_TIME","END_TIME","CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
+        "ABSOLUTE_VISITED_STOPS", "RELATIVE_VISITED_STOPS","ABSOLUTE_IGNORED_STOPS",
+        "RELATIVE_IGNORED_STOPS","GARAGE_TIME","GARAGE_DIST","UNLOADING_TIME",
+        "UNLOADING_DIST","CIRCUIT_TIME","CIRCUIT_DIST","CONNECTION_TIME",
+        "CONNECTION_DIST","OTHERS_TIME","OTHERS_DIST"]
+
+Columns = [Fields_Display[key] for key in order]
+Row = [Fields_Numbers[key] for key in order]
 
 
-#############ATTEMPT TO USE XY TO LINE######################
-import arcpy
-arcpy.env.overwriteOutput = True
-
-def add_numattribute2shpfile(inputshpfile,field_name):
-   """Adds a text field to  the input shpfile
-   inputshpfile: (str)
-   outputshpfile: (str)"""
-   arcpy.AddField_management(inputshpfile,field_name,"FLOAT", "", "", "90", "", "NON_NULLABLE", "NON_REQUIRED", "")
-
-
-def add_attribute2shpfile(inputpointsshpfile,attribute = 'LENGTH',attribute_unit = 'METERS'):
-   """Adds an attribute to 
-   inputshpfile: (str)
-   outputshpfile: (str)"""
-   arcpy.AddGeometryAttributes_management(inputpointsshpfile,attribute,attribute_unit)
-
-
-def sort_shpfilebyidfield(inputshpfile,outputshpfile,intfield,desc=True):
-    if desc:
-        arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "DESCENDING"]])
-    else:
-        arcpy.Sort_management(inputshpfile, outputshpfile, [[intfield, "ASCENDING"]])
-
-def set_georeference(inputshpfile,reference):
-     arcpy.DefineProjection_management(inputshpfile, arcpy.SpatialReference(reference))
-
-def get_georeference(reference):
-    return arcpy.SpatialReference(reference)
-linha_shpfile = "C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Line_Tranche_Code\Line_Tranche_Code.shp"
-
-
-
-#sort in descending order. Inverting the table  will solve the age old problem of
-#putting the next row info in the current row
-sort_shpfilebyidfield(pontos_shpfile,pontos_shpfile_,"SERIAL",True)
-nrrows = str(int(arcpy.GetCount_management(pontos_shpfile).getOutput(0)) -1)
-
-
-#get the first row, but since it is inverted we get the row whose serial number is largest
-
-
-linha_shpfile = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Circuit_01\I0104\aliasCircuitVoyages\aliasToDo\realizacao_2\Products\Line_Tranche_Code\Line_Tranche_Code.shp"
-
-
-field_names = ['ZONA','LENGTH',"BLOCK_ID"]
-
-import geopandas as gpd
-
-import pandas as pd
+series = pd.DataFrame([Row], columns=Columns)

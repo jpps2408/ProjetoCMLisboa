@@ -163,7 +163,7 @@ class CircuitDir(object):
 
     
     def make_CircuitBuffer(self,bufferdistance):
-        
+        self.zone_classification
         self.classify_polygonshpfiles()
         self.bufferdistance = bufferdistance
 

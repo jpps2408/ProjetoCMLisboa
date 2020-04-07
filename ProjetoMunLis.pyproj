@@ -12,6 +12,7 @@
     <Name>ProjetoMunLis</Name>
     <RootNamespace>ProjetoMunLis</RootNamespace>
     <InterpreterId>MSBuild|WorkflowAutomationEnvironment|$(MSBuildProjectFullPath)</InterpreterId>
+    <TestFramework>Pytest</TestFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
