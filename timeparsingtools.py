@@ -29,6 +29,7 @@ def tinterval_string(timediff):
 def tintervalns2hour(nstime):
     return nstime.total_seconds()/3600
 
+
 def string2hour(nstime):
     nstime = string2deltatime(nstime)
     return nstime.total_seconds()/3600

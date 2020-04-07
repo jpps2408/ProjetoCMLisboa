@@ -29,7 +29,7 @@ class ShiftDir(object):
         ########Layer 0 #########
         "namestandard": "ShiftName",
         "alias": os.path.basename(self.shiftdirectory),
-        "filesystem": None,
+        "filesystem": {"info.json":"info.json"},
         "children" :
          ########BEGIN Layer 1 #########
         [
@@ -136,7 +136,7 @@ class ShiftDir(object):
 
 
 
-
+    
     
     def create_metrics_dicts(self):
         
@@ -215,7 +215,7 @@ class ShiftDir(object):
 
         self.order =["CIRCUIT_ID",
                      "SHIFT",
-                     "START_TIME","END_TIME","UNLOADING_LASTTIME",
+                     "START_TIME","END_TIME",
                      "CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
                      "TOTAL_TIME","TOTAL_DIST",
                      "ABSOLUTE_VISITED_STOPS", "RELATIVE_VISITED_STOPS",
@@ -225,7 +225,18 @@ class ShiftDir(object):
                      "CIRCUIT_TIME","CIRCUIT_DIST","CIRCUIT_VELOCITY",
                      "CONNECTION_TIME","CONNECTION_DIST","CONNECTION_VELOCITY",
                      "OTHERS_TIME","OTHERS_DIST"]
-
+                #self.order =["CIRCUIT_ID",
+                #     "SHIFT",
+                #     "START_TIME","END_TIME","UNLOADING_LASTTIME",
+                #     "CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
+                #     "TOTAL_TIME","TOTAL_DIST",
+                #     "ABSOLUTE_VISITED_STOPS", "RELATIVE_VISITED_STOPS",
+                #     "ABSOLUTE_IGNORED_STOPS","RELATIVE_IGNORED_STOPS",
+                #     "GARAGE_TIME","GARAGE_DIST","GARAGE_VELOCITY",
+                #     "UNLOADING_TIME","UNLOADING_DIST","UNLOADING_VELOCITY",
+                #     "CIRCUIT_TIME","CIRCUIT_DIST","CIRCUIT_VELOCITY",
+                #     "CONNECTION_TIME","CONNECTION_DIST","CONNECTION_VELOCITY",
+                #     "OTHERS_TIME","OTHERS_DIST"]
         self.zone_velfieldmapping = {
                     self.circuitobject.zone_classification['GARAGE']:"GARAGE_VELOCITY",
                     self.circuitobject.zone_classification['CIRCUIT']:"CIRCUIT_VELOCITY",
@@ -256,7 +267,12 @@ class ShiftDir(object):
                                    "BLOCK_ID":[],
                                    "DISPLACEMENT":[]}
 
-    @timer
+        self.state = {"CreationFinished":None,
+                      "TimeOfCreation":None,
+                      "WEIGHTING_END":None,
+                      "WEIGHTING_TIMESTAMP":None}
+
+    
     def process_shift(self,buffersize):
         self._join_pointswithpolygon()
         self.parse_field()
@@ -264,10 +280,10 @@ class ShiftDir(object):
         self._get_near_count(buffersize)
         self.get_reports()
         self.generate_reports()
-        
+        self.save_state()
     
 
-
+    
     @timer
     def generate_reports(self):
         
@@ -277,6 +293,14 @@ class ShiftDir(object):
         f = pd.DataFrame([Row], columns=Columns)
         f.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
 
+
+    @timer 
+    def save_state(self):
+        self.state["CreationFinished"] = True
+        self.state["TimeOfCreation"] = datetime2string(datetime.datetime.now())
+        fp = self.shiftpaths['ShiftName']['filepathdicts']['info.json']
+        save_state2json(self.state,fp)
+    
 
     @timer
     def get_reports(self):
@@ -471,11 +495,11 @@ class ShiftDir(object):
         Fields_Numbers["START_TIME"] = Field_Names_Groupby["TIME"][0]
         Fields_Numbers["END_TIME"] = row[field_names.index("timestamp")]
 
-        aux_zone = Field_Names_Groupby["ZONE"][:]
+        #aux_zone = Field_Names_Groupby["ZONE"][:]
         #aux_zone.reverse()
-        last_timeunloadingbegan_index = aux_zone.index(self.circuitobject.zone_classification['UNLOADING'])
-        last_timeunloadingbegan_index = len(Field_Names_Groupby["ZONE"][:]) - last_timeunloadingbegan_index
-        Fields_Numbers["UNLOADING_LASTTIME"] = Field_Names_Groupby["TIME"][last_timeunloadingbegan_index]
+        #last_timeunloadingbegan_index = aux_zone.index(self.circuitobject.zone_classification['UNLOADING'])
+        #last_timeunloadingbegan_index = len(Field_Names_Groupby["ZONE"][:]) - last_timeunloadingbegan_index
+        #Fields_Numbers["UNLOADING_LASTTIME"] = Field_Names_Groupby["TIME"][last_timeunloadingbegan_index]
 
         self.Fields_Numbers = Fields_Numbers
         self.Field_Names_Groupby = Field_Names_Groupby
@@ -491,6 +515,7 @@ class ShiftDir(object):
     @signal 
     def _replace_emptyspacewithligacao(self,fieldzone_value,code_value):
             return replace_bymatchorkeep(" ",fieldzone_value, code_value)     
+
 
     @signal
     def _Cartrack2Time(self,descriptionstring):
@@ -560,7 +585,4 @@ class ShiftDir(object):
         
 
     
-
-    def GenerateResults():
-        print("")
 

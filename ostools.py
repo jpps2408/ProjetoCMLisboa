@@ -2,6 +2,7 @@ import os
 import functools
 import time
 from distutils.dir_util import copy_tree
+import json
 
 def timer(func,*args, **kwargs):
     """Print the runtime of the decorated function"""
@@ -97,4 +98,7 @@ def get_place(previous_string,current_string):
             return True
         else:
             return False
-
+@timer
+def save_state2json(data,fp):
+    with open(fp,'w') as json_file:
+        json.dump(data,  json_file,sort_keys=True)

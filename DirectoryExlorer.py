@@ -7,21 +7,14 @@ import functools
 
 class CircuitDir(object):
 
-    zone_classification = {
-                       'GARAGE':'garagem',
-                       'CIRCUIT':'recolha',
-                       'UNLOADING':'descarga',
-                       'CONNECTION':'ligacao',
-                       'CODE_FIELD_NAME':'ZONA'}
 
     def __init__(self, circuitdirectory, *args, **kwargs):
         self.circuitdirectory = os.path.abspath(circuitdirectory)
-        self.circuito = os.path.basename(self.circuitdirectory)
         self.pardir = os.path.abspath(os.path.join(circuitdirectory,os.path.pardir))
-        self._make_circuitdict()
-        self.__setCircuitPaths()
+        self._make_circuitinfo()
+        self.setCircuitPaths()
     
-    def __setCircuitPaths(self):
+    def setCircuitPaths(self):
 
         CIRCUITJSONDIR = {
         ########Layer 0 #########
@@ -52,7 +45,7 @@ class CircuitDir(object):
                    "namestandard": "CircuitPoints",
                    "alias": "CircuitPoints",
                    #"filesystem": {"namestandard.shp":"alias.shp","namestandard2.shp":"alias2.shp",...}
-                   "filesystem": {"CircuitPoints.shp": self.circuito + ".shp"},
+                   "filesystem": {"CircuitPoints.shp":  os.path.basename(self.circuitdirectory) + ".shp"},
                    "children" : None},
 
                    
@@ -120,9 +113,32 @@ class CircuitDir(object):
         self.circuitpaths = circuitpathsobject.recursive_dictglobalexplorer(CIRCUITJSONDIR)
         self.__assert_polygonfileexistance()
 
-    def _make_circuitdict(self):
+
+    def _make_circuitinfo(self):
+
+
+        self.zone_classification = {
+                           'GARAGE':'garagem',
+                           'CIRCUIT':'recolha',
+                           'UNLOADING':'descarga',
+                           'CONNECTION':'ligacao',
+                           'CODE_FIELD_NAME':'ZONA'}
+
+
         self.circuitdict = {"CIRCUIT_ID":os.path.basename(self.circuitdirectory),
                             "CIRCUIT_TOLERANCE":None}
+
+
+        self.circuitstate = {"CreationFinished":None,
+                             "TimeOfCreation":None,
+                             "CIRCUIT_TOLERANCE":None}
+
+
+        self.circuitparameters = {"PARAMETRO_CIRCUITO (m)":None,
+                                  "PARAMETRO_VISITADOS (m)":None}
+
+
+
 
     def getRealizacoesToDo(self):
         path = self.circuitpaths['CircuitName']['CircuitVoyages']['ToDo']['path']
@@ -223,7 +239,7 @@ class CircuitDir(object):
                 print("There is no file:\n",{os.path.basename(path)},
                         "\nat the folder:\n",{os.path.join(path,os.path.pardir)})
             else:
-                print("Good to go")
+                pass
 
 
 
