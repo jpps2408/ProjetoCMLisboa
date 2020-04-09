@@ -16,7 +16,7 @@ def timer(func,*args, **kwargs):
            print("Finished " + func.__name__ + " in " + str(run_time) + " secs\n")
            return value
         except Exception as e:
-           print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
+           print("Error occurred.\n\t\t\tFunction: " + func.__name__ + "\n\t\t\tExcepion: " + str(e))
     return wrapper_timer
 
 
@@ -28,7 +28,7 @@ def signal(func,*args, **kwargs):
            value = func(*args,**kwargs)
            return value
         except Exception as e:
-           print("Error occurred.\n\tFunction: " + func.__name__ + "\n\tExcepion: " + str(e))
+           print("Error occurred.\n\t\t\tFunction: " + func.__name__ + "\n\t\t\tExcepion: " + str(e))
     return wrapper_timer
 
 
@@ -68,6 +68,7 @@ def getfilesinpath(inpath,extension="*"):
 def copy_directory(src,dest):
     copy_tree(src,dest)
 
+
 @signal
 def rename_shpfiles(dir,old,new,shpfile_filetypes = set((".cpg",".dbf",".prj",".sbn",".sbx",".shp",".shp.xml","xml",".shx",".accdb"))):
     for file in os.listdir(dir):
@@ -85,6 +86,7 @@ def rename_shpfiles(dir,old,new,shpfile_filetypes = set((".cpg",".dbf",".prj",".
             else:
                 os.remove(old_path)
 
+
 @signal
 def replace_bymatchorkeep(match_str,old_str,new_str):    
     if old_str == match_str:
@@ -92,13 +94,22 @@ def replace_bymatchorkeep(match_str,old_str,new_str):
     else:
         return old_str
 
+
 @signal
 def get_place(previous_string,current_string):
         if previous_string != current_string:
             return True
         else:
             return False
+
+
 @timer
 def save_state2json(data,fp):
     with open(fp,'w') as json_file:
         json.dump(data,  json_file,sort_keys=True)
+
+@timer
+def load_stateOfjson(fp):
+    with open(fp,'w') as json_file:
+        data = json.load(json_file)
+    return data
