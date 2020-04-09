@@ -11,17 +11,16 @@ class CircuitDir(object):
     def __init__(self, circuitdirectory, *args, **kwargs):
         self.circuitdirectory = os.path.abspath(circuitdirectory)
         self.pardir = os.path.abspath(os.path.join(circuitdirectory,os.path.pardir))
-        self.setcircuitpathdicts()
         self._make_circuitinfo()
+        self.setCircuitPaths()
     
-
-    def setcircuitpathdicts(self):
+    def setCircuitPaths(self):
 
         CIRCUITJSONDIR = {
         ########Layer 0 #########
         "namestandard": "CircuitName",
         "alias": os.path.basename(self.circuitdirectory),
-        "filesystem": {"TOLERANCES.json":"TOLERANCIAS.json"},
+        "filesystem": None,
         "children" :
          ########BEGIN Layer 1 #########
         [
@@ -90,6 +89,13 @@ class CircuitDir(object):
              "children" :
              ########BEGIN Layer 2 #########
              [
+                 
+                 {
+                  "namestandard": "ToDo",
+                  "alias": "aliasToDo",
+                  "filesystem": None,
+                  "children" : None},
+                 
                  {
                   "namestandard": "DoNe",
                   "alias": "aliasDoNe",
@@ -104,7 +110,8 @@ class CircuitDir(object):
 
 
         circuitpathsobject = DictionaryExplorer(self.pardir)
-        self.circuitpathdicts = circuitpathsobject.recursive_dictglobalexplorer(CIRCUITJSONDIR)
+        self.circuitpaths = circuitpathsobject.recursive_dictglobalexplorer(CIRCUITJSONDIR)
+        self.__assert_polygonfileexistance()
 
 
     def _make_circuitinfo(self):
@@ -130,193 +137,112 @@ class CircuitDir(object):
         self.circuitparameters = {"PARAMETRO_CIRCUITO (m)":None,
                                   "PARAMETRO_VISITADOS (m)":None}
 
-        self.initialize_circuitparametersifnotexist()
-
-
-    
-    @signal
-    def __call__(self, override = False):
-         if self.runnable():
-            self._get_CommonPolygonPath()
-            self.load_circuitparameters()
-            if override:
-                 try:
-                     self.make_CircuitPolygonFromCodedAreas()
-                 except:
-                     self.make_CircuitPolygonFromScratch()
-            elif self._check_CommonPolygonPath():
-                print("The Circuit is ready")
 
 
 
-
-
-    def getRealizacoesDoNe(self):
-        path = self.circuitpathdicts['CircuitName']['CircuitVoyages']['DoNe']['path']
+    def getRealizacoesToDo(self):
+        path = self.circuitpaths['CircuitName']['CircuitVoyages']['ToDo']['path']
         return [os.path.join(path,round) for round in os.listdir(path)]
-
-
-
-
-
-    @signal
-    def runnable(self):
-         return all([self._check_polygonfileexistance(),self._check_validjsontolerances()])
-
-    
-    @signal
-    def _check_validjsontolerances(self):
-        file = self.circuitpathdicts['CircuitName']['filepathdicts']['TOLERANCES.json']
-        if os.path.exists(file):
-            jsontolerances = load_stateOfjson(file)
-            allintegervalues = [type(jsontolerances[key]) is int for key in jsontolerances.keys()]
-            if all(allintegervalues):
-                return True
-            else:
-                return False
-        else:
-            return False
-
-
-
-
-
-
-    @signal
-    def load_circuitparameters(self,file):
-        jsontolerances = load_stateOfjson(file)
-        self.circuitparameters["PARAMETRO_VISITADOS (m)"] = int(jsontolerances["PARAMETRO_VISITADOS (m)"])
-        self.circuitparameters["PARAMETRO_CIRCUITO (m)"] = int(jsontolerances["PARAMETRO_CIRCUITO (m)"])
-        self.circuitdict["CIRCUIT_TOLERANCE"] = bufferdistance
-
-
-    @signal
-    def initialize_circuitparametersifnotexist(self):
-        file = self.circuitpathdicts['CircuitName']['filepathdicts']['TOLERANCES.json']
-        if not os.path.exists(file):
-            save_state2json(self.circuitparameters,file)
-
-
-
-
+    def getRealizacoesDoNe(self):
+        path = self.circuitpaths['CircuitName']['CircuitVoyages']['DoNe']['path']
+        return [os.path.join(path,round) for round in os.listdir(path)]
+    def ProcessRealizacoesToDo():
+        roundlist = getRealizacoesToDo()
+        for shift in roundlist:
+            Shift = ShiftDir(shift)
+            Shift.GenerateResults()
+    def ProcessRealizacoesDoNe(self):
+        roundlist = getRealizacoesDoNe()
+        for shift in roundlist:
+            Shift = ShiftDir(shift)
+            Shift.GenerateResults()
 
 
 
     
-    @signal
-    def _check_CommonPolygonPath(self):
-        self._get_CommonPolygonPath()
-        ProcessedCircuitPolygon = self.ProcessedPolygon.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["filepathdicts"]["SingleObjectBuffered.shp"]
-        if os.path.exists(ProcessedCircuitPolygon):
-            return True
-        else:
-            return False
 
+    
+    
+        # Merge all of the polygons
+    def make_CircuitPolygon(self,bufferdistance):
+        #Get all of the important files for producing the polygons
+        self.make_CircuitBuffer(bufferdistance)
+        AreaBuffered = self.ProcessedPolygon.processedpolygonspaths["ProcessedPolygonsName"]["CircuitAreaBuffered"]["filepathdicts"]["CircuitAreaBuffered.shp"]
+        Garage = self.circuitpaths["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"]
+        Unloading = self.circuitpaths["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"]
         
-    @signal
-    def _check_polygonfileexistance(self):
-        Points = self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"]
-        Garage = self.circuitpathdicts["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"]
-        Unloading = self.circuitpathdicts["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"]
+        
 
-        for path in [Points,Garage,Unloading]:
-            if not os.path.exists(path):
-                print("There is no file:\n {} \nat the folder:\n {}".format(os.path.basename(path),os.path.join(path,os.path.pardir)))
-                return False
-        return True
+        #Merge it with the old ones
+        ProcessedCircuitPolygon = self.ProcessedPolygon.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["filepathdicts"]["SingleObjectBuffered.shp"]
+        merge_polygons([AreaBuffered,Garage,Unloading],ProcessedCircuitPolygon)
 
     
 
 
+    
+    def make_CircuitBuffer(self,bufferdistance):
+        self.zone_classification
+        self.classify_polygonshpfiles()
 
-
-
-
-    def _get_CommonPolygonPath(self):
-        bufferdistance = self.circuitparameters["PARAMETRO_CIRCUITO (m)"]
-        CommonPolygons = self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CommonPolygons']['path']
+        CommonPolygons = self.circuitpaths["CircuitName"]['CircuitPolygons']['CommonPolygons']['path']
         Polygons_Dir_Name = "MergedPolygons_" + str(bufferdistance)
+
         Buffered_CircuitArea = os.path.join(CommonPolygons, Polygons_Dir_Name)
         self.ProcessedPolygon = ProcessedPolygonsDir(Buffered_CircuitArea)
 
-    
-
-
-
-
-
-
-    def make_CircuitPolygonFromCodedAreas(self):
-        self._get_CommonPolygonPath()
-        self._make_CircuitBuffer()
-        self.make_CircuitPolygon()
-
-
-    def make_CircuitPolygonFromScratch(self):
-        self._make_CircuitArea()
-        self._classify_polygonshpfiles()
-        self.make_CircuitPolygonFromCodedAreas()
-
-        
-
-
-
-
-
-    @signal    # Merge all of the polygons
-    def make_CircuitPolygon(self):
-        #Get all of the important files for producing the polygons
-        AreaBuffered = self.ProcessedPolygon.processedpolygonspaths["ProcessedPolygonsName"]["CircuitAreaBuffered"]["filepathdicts"]["CircuitAreaBuffered.shp"]
-        Garage = self.circuitpathdicts["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"]
-        Unloading = self.circuitpathdicts["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"]
-        ProcessedCircuitPolygon = self.ProcessedPolygon.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["filepathdicts"]["SingleObjectBuffered.shp"]
-        #Merge it with the old ones
-        
-        merge_polygons([AreaBuffered,
-                        Garage,
-                        Unloading],
-                        ProcessedCircuitPolygon)
-
-
-    @signal
-    def _make_CircuitBuffer(self):
         #Create a new buffered Prs Object
-        Area = self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"]
+        Area = self.circuitpaths["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"]
         AreaBuffered = self.ProcessedPolygon.processedpolygonspaths["ProcessedPolygonsName"]["CircuitAreaBuffered"]["filepathdicts"]["CircuitAreaBuffered.shp"]
         
         buffer_prsarea(Area,
                        AreaBuffered,
-                       self.circuitparameters["PARAMETRO_CIRCUITO (m)"])
+                       bufferdistance)
 
+        self.circuitdict["CIRCUIT_TOLERANCE"] = bufferdistance
 
-    @signal    #Classify all of the polygons with their respective codes
-    def _classify_polygonshpfiles(self):
-
-        #Classify the Circuit Area
-        addfieldcode(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"], 
-                     self.zone_classification['CODE_FIELD_NAME'],
-                     self.zone_classification['CIRCUIT'])
-
-        #Classify the Garage
-        addfieldcode(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"], 
-                     self.zone_classification['CODE_FIELD_NAME'],
-                     self.zone_classification['GARAGE'])
-
-        #Classify the unloading Polygon
-        addfieldcode(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"], 
-                     self.zone_classification['CODE_FIELD_NAME'],
-                     self.zone_classification['UNLOADING'])
-
-
-
-    #Create a Polygon of the Area from the Points with NO buffer
-    @signal
-    def _make_CircuitArea(self):
-        convert_prspoints2prsarea(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"],
-                               self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"])
     
 
-        
+        #Classify all of the polygons with their respective codes
+    def classify_polygonshpfiles(self):
+
+        #Create a Polygon of the Area from the Points with NO buffer
+        self.make_CircuitArea()
+
+        #Classify the Circuit Area
+        addfieldcode(self.circuitpaths["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"], 
+                     self.zone_classification['CODE_FIELD_NAME'],self.zone_classification['CIRCUIT'])
+
+        #Classify the Garage
+        addfieldcode(self.circuitpaths["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"], 
+                     self.zone_classification['CODE_FIELD_NAME'],self.zone_classification['GARAGE'])
+
+        #Classify the unloading Polygon
+        addfieldcode(self.circuitpaths["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"], 
+                     self.zone_classification['CODE_FIELD_NAME'],self.zone_classification['UNLOADING'])
+
+
+
+    def make_CircuitArea(self):
+        convert_prspoints2prsarea(self.circuitpaths["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"],
+                               self.circuitpaths["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitArea']['filepathdicts']["CircuitArea.shp"])
+    
+      
+
+    
+    def __assert_polygonfileexistance(self):
+        Points = self.circuitpaths["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"]
+        Garage = self.circuitpaths["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"]
+        Unloading = self.circuitpaths["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"]
+        for path in [Points,Garage,Unloading]:
+            if not os.path.exists(path):
+                print("There is no file:\n",{os.path.basename(path)},
+                        "\nat the folder:\n",{os.path.join(path,os.path.pardir)})
+            else:
+                pass
+
+
+
     
 
     

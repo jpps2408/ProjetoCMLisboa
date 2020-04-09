@@ -12,12 +12,13 @@ class ShiftDir(object):
     
     def __init__(self, shiftdirectory, CircuitDirObject ,*args, **kwargs):
 
+            self.processedpolygonspaths = CircuitDirObject.ProcessedPolygon.processedpolygonspaths
             self.circuitobject = CircuitDirObject
             self.Field_Names_Groupby = {}
             self.shiftdirectory = os.path.abspath(shiftdirectory)
             self.pardir = os.path.abspath(os.path.join(shiftdirectory,os.path.pardir))
-            self.setShiftPaths()
             self.create_metrics_dicts()
+            self.setShiftPaths()
 
     
     
@@ -272,12 +273,11 @@ class ShiftDir(object):
                       "WEIGHTING_TIMESTAMP":None}
 
     
-    def process_shift(self):
-        self.circuitobject(False)
+    def process_shift(self,buffersize):
         self._join_pointswithpolygon()
         self.parse_field()
         self.create_singlelinewithpoints()
-        self._get_near_count(self.circuitobject.circuitparameters["PARAMETRO_VISITADOS (m)"])
+        self._get_near_count(buffersize)
         self.get_reports()
         self.generate_reports()
         self.save_state()
@@ -286,17 +286,11 @@ class ShiftDir(object):
     
     @timer
     def generate_reports(self):
-        #Create a columns list with the fields ordered as in self.order. 
-        #In order to ensure flexibility, the order list contains the names that are known within the code
-        #And the self.Fields_Display maps them onto the names that will be displayed for the "outside workd", in the .csv file
+        
         Columns = [self.Fields_Display[key] for key in self.order]
-        #The Fields Values, which have the same keys as the Fields display will also be ordered too to accommodate the ordered Fields_Diplay
         Row = [self.Fields_Numbers[key] for key in self.order]
 
-        #The DataFrame can now be created using pandas DataFrame object
         f = pd.DataFrame([Row], columns=Columns)
-        #The pandas DataFrame object uses the method to_csv to write it to a csv file, with a separator ; to make sure it can be seen using 
-        #a common .xlsx file reader
         f.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
 
 
@@ -312,53 +306,24 @@ class ShiftDir(object):
     def get_reports(self):
         self._get_abrupts_reports()
 
-    
+
     @timer
     def _get_near_count(self,buffersize):
-        '''
-        This gets the number of points that were visited according to
-        the buffersize that is given in
-        '''
-
-        #We must make sure that we already have the Circuit points file with a field that contains the count of how many objects each point was 
-        ##inside of.
-        ##If we had used the split line, we could have more than one buffered line (which becomes a blurred line in the sense 
-        ##that it is no longer a line, but is instead an area) intersecting a single point, thus possibly rendering a value larger than 1 in the Join_Count field 
-        ##Since it we are using a single line, there can only be a binary evaluation of 1 or 0 in the field Join_Count
-        ## which tells us if the  points were intersected by the buffered line (evaluation of 1) or not (evaluation of 0)
-        #In order to make the method more flexible, the evaluation is carried out by evaluating if it is a 0 or anything else
         self._join_linewithstaticstops(buffersize)
-        #Get the Shapefile that has the processed points
         near_shpfile = self.shiftpaths['ShiftName']['Products']['Circuit_Stops_Original']['filepathdicts']['Circuit_Stops_Original.shp']
-        #Get the field
         join_count = "Join_Count"
-        #Create the fieldname list. Since it is a single field, it is not needed; However, if we had more fields it would be.
         field_names = [join_count]
-        #Create an arcpy cursor (an iterable object) that iterated over the rows. This is useful as it only loads a single row into memory each time
-        #it is yielded. We only give it the parameters we need: the shpfile path and the fieldname list of the fields we want
         with arcpy.da.UpdateCursor(near_shpfile,field_names) as cursor:
-           #initialize a counter for the total number of points. There is an inbuilt function of arcpy that does this
-           #but in order to minimize function overhead, this should not be too expensive
            total_point_count = 0
-           #intialize a counter for the ignored point counts
            ignored_point_count = 0
-           #Each row is a list with the values in the order specified by the field_name list we gave it as inpuy
            for row in cursor:
-               #if the field join count has a 0 value
-               #increment the counter
                if row[field_names.index(join_count)]==0:
                    ignored_point_count+=1
-               #always increment the counter
                total_point_count+=1
-        #the visited nr of points is trivial
         visited_point_count = total_point_count - ignored_point_count
-        #note that in order for us to have a number that is not an int, we must cast at least one of the variables to float, otherwise the result
-        #will not be cast to float
-        #get the ratio of visited and ignored points and round it to 2 decimal places
         visited_point_ratio = round(100*(visited_point_count/float(total_point_count)),2)
         ignored_point_ratio = round(100*(ignored_point_count/float(total_point_count)),2)
 
-        #update the dictionary that will hold the values of the fields in the Appendable csv
         self.Fields_Numbers["ABSOLUTE_VISITED_STOPS"] = visited_point_count
         self.Fields_Numbers["RELATIVE_VISITED_STOPS"] = visited_point_ratio
         self.Fields_Numbers["ABSOLUTE_IGNORED_STOPS"] = ignored_point_count
@@ -368,66 +333,39 @@ class ShiftDir(object):
            
     @timer 
     def _join_linewithstaticstops(self,buffersize):
-        '''
-        This joins the single line, that is buffered with the input buffersize
-        with the circuit points
-        '''
-        #When we get the buffersize, immediately assign it to the corresponding field in the dictionary that holds all the 
-        #values that will be in the Appendable csv
         self.Fields_Numbers['VISITED_TOLERANCE'] = buffersize
         line_sole = self.shiftpaths['ShiftName']['Products']['Line_Sole']['filepathdicts']['Line_Sole.shp']
         line_buffered = self.shiftpaths['ShiftName']['Products']['Line_Buffered']['filepathdicts']['Line_Buffered.shp']
-        prs_shpfile = self.circuitobject.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"]
+        prs_shpfile = self.circuitobject.circuitpaths["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"]
         near_shpfile = self.shiftpaths['ShiftName']['Products']['Circuit_Stops_Original']['filepathdicts']['Circuit_Stops_Original.shp']
-        #Buffer the line
         buffer_shpfiles(line_sole,line_buffered,buffersize)
-        #Spatially join the line with the points and output it to near_shpfile
         spatialjoin_shpfiles(prs_shpfile,line_buffered,near_shpfile)
 
     
     @timer
     def _get_abrupts_reports(self):
-        #Create a Pandas DataFrame object with the Dictionary that contains the changes of zone throughout the shift
         df = pd.DataFrame(self.Field_Names_Groupby)
-        #Get the order in which we want to diplay them
         fieldnames=["INI_SERIAL","FIN_SERIAL","BLOCK_ID","TIME","ZONE","INTERVAL","HOURS","DISPLACEMENT"]
-        #Reorder the dataframe
         df = df[fieldnames]
-        #Finally get the statistics that the client wants
         self._get_zstats(df)
-        #We can output this in order to get the history timeline of the shift. THIS IS GOLD
         #df.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_History.csv"],sep=';')
         
 
     @timer
     def _get_zstats(self,df):
-        '''
-        Note that this is easily the most changeable part of the class, as this generates what the client will have as the procesing output
-        '''
-        #Get the conversion factor from meters to kmeters
         m2km = 10**(-3)
-        #Get the fieldnames on which the dataframe will be grouped by. Not
         fieldnames = ["ZONE"]
-        #Groupby zone and sum the Hours and length Columns
         df_groupby = df.groupby(fieldnames)["HOURS","DISPLACEMENT"].sum()
-        #get the index, which are the index values
         zones = df_groupby.index.values
-        #get the hours, which are in the Hours column
         hours = df_groupby["HOURS"].values
-        #get the length which are in the length columns
         displacements = df_groupby["DISPLACEMENT"].values
         for i,zone in enumerate(zones):
-            #round the hour to 3 decimal places
             rounded_hour = round(hours[i],3)
-            #round the displacement in meters to one decimal place and multiply the m2km
             rounded_displacement = round(displacements[i],1)*m2km
-            #put it in the main dictionary if the zone matches the code of the zone
             self.Fields_Numbers[self.zone_timefieldmapping[zone]] = rounded_hour
             self.Fields_Numbers[self.zone_displfieldmapping[zone]] = rounded_displacement
-            #put the speed in the dicitonary
             speed = rounded_displacement/rounded_hour
             self.Fields_Numbers[self.zone_velfieldmapping[zone]] = round(speed,2)
-        #put the totals inside the dictionary. this will always be outside the sum
         self.Fields_Numbers['TOTAL_TIME'] = round(df["HOURS"].sum(),2)
         self.Fields_Numbers['TOTAL_DIST'] = round(df["DISPLACEMENT"].sum(),1)*m2km
 
@@ -439,53 +377,29 @@ class ShiftDir(object):
         points = self.shiftpaths['ShiftName']['Products']['Points_Parsed_Zone']['filepathdicts']['Points_Parsed_Zone.shp']
         line_part_coded = self.shiftpaths['ShiftName']['Products']['Line_Tranche_Code']['filepathdicts']['Line_Tranche_Code.shp']
 
-        #convert the points to a line
         convert_points2line(points,line_sole)
-        #split the line into several parts
         split_linein2pairs(line_sole,line_part_uncoded)
-        #join the split line with the shift points, which will give the points classification to the line
         spatialjoin_shpfiles(line_part_uncoded,points,line_part_coded)
-        #Calculate the length of each of the split lines, which are now with a code and the block id classification of the points
         add_attribute2shpfile(line_part_coded)
 
-
-        #pass in the shpfile, the original block id array and the field name which contains the length of each split line
-        blockid_array,length_array = self._get_gpdindexvalues(line_part_coded,self.Fields_Table_Parsed["BLOCK_ID"],'LENGTH')
-        
-        #Since there is the possibility that a block id of the points did not make it into the lines block id (because the split line was joined with multiple points
-        #and kept another classification) I decided to compare the block id arrays from the points and the line
+        blockid_array,length_array = self._get_gpdindexvalues(line_part_coded,self.Fields_Table_Parsed["BLOCK_ID"],'LENGTH')           
         length_array = self._fill_length_distwithzeros(self.Field_Names_Groupby["BLOCK_ID"],blockid_array,length_array)
-        #Finally assign it to the array
         self.Field_Names_Groupby["DISPLACEMENT"] = length_array
 
 
     @timer
     def _fill_length_distwithzeros(self,blockid_time,blockid_dist,length_dist):
-        #check if there are differences in the block ids of the points and the lines (which makes a non empty set)
         differentblocks = set(blockid_time)-set(blockid_dist)
-        #if there is a difference in the block id arrays of the lines and the points, insert a 0 at the length array in the position of the block id
-        #I need to sort the set because if the length array has 9 elements and the pooints array has 20 elements and I att
-        length_dist_filled = np.zeros((len(blockid_time),))
-        zero = float(0)
-        for index_iter in sorted(differentblocks):
-            Index = np.where(blockid_time==index)[0][0]
-            try:
-                length_dist = np.insert(length_dist,index,zero)
-            except:
-                length_dist = np.append(length_dist,zero)
+        for index in sorted(differentblocks):
+            np.insert(length_dist,index,float(0))
         return length_dist
         
 
     @timer   
     def _get_gpdindexvalues(self,shpfile,groupfieldname,sumfieldname):
-        #read the lines shpfile
         pd_all = gpd.read_file(shpfile)
-        #select the rows sumfieldname and the field on which the groupby operation will operate 
-        #group the dataframe containing the lines by the groupfield (which is given by the block ids) and sum the lines'lengths.
         pd_index_values = pd_all[[sumfieldname,groupfieldname]].groupby([groupfieldname])[sumfieldname].sum()
-        #get the block ids
         pd_index = pd_index_values.index.values
-        #and the sums of lengths
         pd_values = pd_index_values.values
         return pd_index,pd_values
 
@@ -524,7 +438,7 @@ class ShiftDir(object):
                      os.path.splitext(os.path.basename(pointsparsedzonegraded))[0])
         
         add_longattribute2shpfile(pointsparsedzonegraded,block_id)
-        #initialize the previous_place as somethin
+        
         previous_place = ""
         self.Field_Names_Groupby["ZONE"].append(previous_place)
 
@@ -625,6 +539,11 @@ class ShiftDir(object):
 
 
 
+
+
+
+
+
     @signal
     def _join_pointswithpolygon(self):
         self._copy_mergedppolygon()
@@ -637,17 +556,24 @@ class ShiftDir(object):
         discard_fieldsInshpfile(pointsnotparsedzonegraded,deletefieldnames)
         add_idfield2shpfile(pointsnotparsedzonegraded,self.Fields_Table_Parsed["SERIAL_ID"])
     
-        
+
+
+
+
+
     @signal
     def _copy_mergedppolygon(self):
-        self.processedpolygonspaths = self.circuitobject.ProcessedPolygon.processedpolygonspaths
         self._convert_kml2shp()
         copy_directory(self.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["path"],self.shiftpaths["ShiftName"]["Products"]["Circuit_Polygon_Original"]["path"])
         old_basename,_ = os.path.splitext(os.path.basename(self.processedpolygonspaths["ProcessedPolygonsName"]["SingleObjectBuffered"]["filepathdicts"]["SingleObjectBuffered.shp"]))
         new_basename,_ = os.path.splitext(os.path.basename(self.shiftpaths["ShiftName"]["Products"]["Circuit_Polygon_Original"]["filepathdicts"]["Circuit_Polygon_Original.shp"]))
         rename_shpfiles(self.shiftpaths["ShiftName"]["Products"]["Circuit_Polygon_Original"]["path"],old_basename,new_basename)
 
-        
+
+
+
+
+
     @signal
     def _convert_kml2shp(self):
         kml_folder = self.shiftpaths["ShiftName"]["KML"]["path"]

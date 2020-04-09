@@ -13,8 +13,6 @@
     <RootNamespace>ProjetoMunLis</RootNamespace>
     <InterpreterId>MSBuild|WorkflowAutomationEnvironment|$(MSBuildProjectFullPath)</InterpreterId>
     <TestFramework>Pytest</TestFramework>
-    <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -28,7 +26,6 @@
     <Compile Include="DictionaryInstantiator.py" />
     <Compile Include="DirectoryExlorer.py" />
     <Compile Include="MasterHandler_.py" />
-    <Compile Include="ostools.py" />
     <Compile Include="ProcessedPolygonsDirClass.py" />
     <Compile Include="module6.py" />
     <Compile Include="ProjetoMunLis.py" />
