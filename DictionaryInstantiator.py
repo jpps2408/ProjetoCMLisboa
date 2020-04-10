@@ -29,8 +29,8 @@ class DictionaryExplorer:
             #information that will be used in this directory and child directories
             currentpath_str = os.path.join(currentpath_str,maskname)
             if not os.path.exists(currentpath_str):
-                if os.path.isdir(currentpath_str):
-                    os.path.mkdir(currentpath_str)
+                if not os.path.isfile(currentpath_str):
+                    os.mkdir(currentpath_str)
             local_dict[realname]['path'] = currentpath_str
             partialdict = {}
             while child_i < children_nr:

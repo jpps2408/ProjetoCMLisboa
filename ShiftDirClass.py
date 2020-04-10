@@ -117,7 +117,7 @@ class ShiftDir(object):
                {
                   "namestandard": "ReportAnalysis",
                   "alias": "ReportAnalysis",
-                  "filesystem": {"Time_History.csv":"Time_History.csv","Appendable.csv":"Appendable.csv"},
+                  "filesystem": {"History_Timline.csv":"History_Timline.csv","Appendable.csv":"Appendable.csv"},
                   "children" : None}
 
                   ]
@@ -210,7 +210,7 @@ class ShiftDir(object):
         self.Fields_Numbers={_ : None for _ in self.Fields_Display.keys()}
         self.Fields_Numbers["SHIFT"] = os.path.basename(self.shiftdirectory)
         self.Fields_Numbers.update(self.circuitobject.circuitdict)
-
+        
 
         self.order =["CIRCUIT_ID",
                      "SHIFT",
@@ -265,22 +265,29 @@ class ShiftDir(object):
                                    "ZONE":[], 
                                    "BLOCK_ID":[],
                                    "DISPLACEMENT":[]}
-
+        
         self.state = {"CreationFinished":None,
                       "TimeOfCreation":None,
                       "WEIGHTING_END":None,
                       "WEIGHTING_TIMESTAMP":None}
-
     
-    def process_shift(self):
-        self.circuitobject(False)
-        self._join_pointswithpolygon()
-        self.parse_field()
-        self.create_singlelinewithpoints()
-        self._get_near_count(self.circuitobject.circuitparameters["PARAMETRO_VISITADOS (m)"])
-        self.get_reports()
-        self.generate_reports()
-        self.save_state()
+
+    @timer
+    def process_shift(self,delete=True):
+        try:
+            self.circuitobject.start()
+            self._join_pointswithpolygon()
+            self.parse_field()
+            self.create_singlelinewithpoints()
+            self.Fields_Numbers['CIRCUIT_TOLERANCE'] = self.circuitobject.circuitparameters["PARAMETRO_CIRCUITO (m)"]
+            self._get_near_count(self.circuitobject.circuitparameters["PARAMETRO_VISITADOS (m)"])
+            self.get_reports()
+            self.generate_reports()
+            self.save_state()
+            if delete:
+                shutil.rmtree(self.shiftpaths["Products"]["ReportAnalysis"]['path'], onerror=remove_readonly)
+        except:
+            print("Was not able to process realizacao: {} in circuit {}".format(self.Fields_Numbers["SHIFT"],self.Fields_Numbers["CIRCUIT_ID"]))
     
 
     
@@ -304,6 +311,7 @@ class ShiftDir(object):
     def save_state(self):
         self.state["CreationFinished"] = True
         self.state["TimeOfCreation"] = datetime2string(datetime.datetime.now())
+        self.state.update(self.circuitobject.circuitparameters)
         fp = self.shiftpaths['ShiftName']['filepathdicts']['info.json']
         save_state2json(self.state,fp)
     
@@ -396,7 +404,9 @@ class ShiftDir(object):
         #Finally get the statistics that the client wants
         self._get_zstats(df)
         #We can output this in order to get the history timeline of the shift. THIS IS GOLD
-        #df.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Time_History.csv"],sep=';')
+        df["DISPLACEMENT"] = df["DISPLACEMENT"].apply(lambda num: round(num,2))
+        df["HOURS"] = df["HOURS"].apply(lambda num: round(num,3))
+        df.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["History_Timline.csv"],sep=';')
         
 
     @timer
@@ -565,7 +575,6 @@ class ShiftDir(object):
               row[field_names.index(block_id)] = block_count
               cursor.updateRow(row)
         
-
         #Append the last row id to the last group fin_serial list, as this is the last point corresponding to the last block
         Field_Names_Groupby["FIN_SERIAL"].append(row[field_names.index(serial_id)])
         #Discard the first list element since the get_place() returned True in the transition "" to the first zone

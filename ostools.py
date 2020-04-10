@@ -2,7 +2,9 @@ import os
 import functools
 import time
 from distutils.dir_util import copy_tree
+import shutil
 import json
+import traceback
 
 def timer(func,*args, **kwargs):
     """Print the runtime of the decorated function"""
@@ -16,7 +18,7 @@ def timer(func,*args, **kwargs):
            print("Finished " + func.__name__ + " in " + str(run_time) + " secs\n")
            return value
         except Exception as e:
-           print("Error occurred.\n\t\t\tFunction: " + func.__name__ + "\n\t\t\tExcepion: " + str(e))
+           print("Error occurred.\n\t\t\tFunction: " + func.__name__ + "\n\t\t\tExcepion: " + str(traceback.print_exc()))
     return wrapper_timer
 
 
@@ -110,6 +112,20 @@ def save_state2json(data,fp):
 
 @timer
 def load_stateOfjson(fp):
-    with open(fp,'w') as json_file:
+    with open(fp, 'r') as json_file:
         data = json.load(json_file)
     return data
+
+@timer
+def retrieve_filewithextension(directory,extension):
+        for file in os.listdir(directory):
+            filename, file_extension = os.path.splitext(file)
+            if file_extension == extension:
+                shpfile = os.path.join(directory,file)
+                break
+        return shpfile
+
+
+
+   
+  

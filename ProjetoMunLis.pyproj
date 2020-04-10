@@ -30,7 +30,6 @@
     <Compile Include="MasterHandler_.py" />
     <Compile Include="ostools.py" />
     <Compile Include="ProcessedPolygonsDirClass.py" />
-    <Compile Include="module6.py" />
     <Compile Include="ProjetoMunLis.py" />
     <Compile Include="ShiftDirClass.py" />
     <Compile Include="TEST.py" />

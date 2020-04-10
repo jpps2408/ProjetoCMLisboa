@@ -48,15 +48,16 @@ from MasterHandler_ import *
 
 
 #path = input("Path:")
-#AS = AncientStructural(r"C:\Users\JoaoPedro\Documents\BIGDirectory")
-#AS.replace_AllKmls()
+AS = AncientStructural(r"C:\Users\JoaoPedro\Documents\BIGDirectory")
+AS.replace_AllKmls()
 
 circuit_folder = r"C:\Users\JoaoPedro\Documents\BIGDirectory\CIRCUITS\I0103"
 circuit = CD.CircuitDir(circuit_folder)
-circuit(False)
-#realizacao = r"C:\Users\JoaoPedro\Documents\BIGDirectory\CIRCUITS\I0103\aliasCircuitVoyages\aliasDoNe\I0103_V2538_03_01_2020"
-#shift = ShiftDir(realizacao,CD.CircuitDir(r"C:\Users\JoaoPedro\Documents\BIGDirectory\CIRCUITS\I0103"))
-#shift.process_shift()
+
+cir
+realizacao = r"C:\Users\JoaoPedro\Documents\BIGDirectory\CIRCUITS\I0103\aliasCircuitVoyages\aliasDoNe\I0103_V2538_15_01_2020"
+shift = ShiftDir(realizacao,circuit)
+shift.process_shift()
 ######################################################
 ################## ##################
 ######################################################
