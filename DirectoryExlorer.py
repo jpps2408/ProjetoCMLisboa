@@ -92,7 +92,15 @@ class CircuitDir(object):
              [
                  {
                   "namestandard": "DoNe",
-                  "alias": "aliasDoNe",
+                  "alias": "Preparados",
+                  "filesystem": None,
+                  "children" : None}
+                  
+             ########END Layer 2 #########
+             ,
+                 {
+                  "namestandard": "ToDo",
+                  "alias": "Processados",
                   "filesystem": None,
                   "children" : None}
                   ]
@@ -139,11 +147,12 @@ class CircuitDir(object):
         if self.get_parameters():
             if self._check_CommonPolygonPath():
                 print("The Circuit {} had a prepared polygon.".format(os.path.basename(self.circuitdirectory)))
-            else:
-                try:
-                    self.make_CircuitPolygonFromCodedAreas()
-                except:
-                    self.make_CircuitPolygonFromScratch()
+                return True
+            elif not self._check_CommonPolygonPath():
+                 self.make_CircuitPolygonFromScratch()
+                 return True
+        else:
+            return False
 
 
 
@@ -234,7 +243,7 @@ class CircuitDir(object):
             return True
 
         except:
-            print("Polygons of the circuit: {}".format(os.path.basename(self.circuitdirectory)))
+            print("Polygons of the circuit are not present: {}".format(os.path.basename(self.circuitdirectory)))
             return False
 
 

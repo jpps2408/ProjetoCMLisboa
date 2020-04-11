@@ -274,22 +274,28 @@ class ShiftDir(object):
 
     @timer
     def process_shift(self,delete=True):
+      if self.circuitobject.start():
         try:
-            self.circuitobject.start()
-            self._join_pointswithpolygon()
-            self.parse_field()
-            self.create_singlelinewithpoints()
-            self.Fields_Numbers['CIRCUIT_TOLERANCE'] = self.circuitobject.circuitparameters["PARAMETRO_CIRCUITO (m)"]
-            self._get_near_count(self.circuitobject.circuitparameters["PARAMETRO_VISITADOS (m)"])
-            self.get_reports()
-            self.generate_reports()
-            self.save_state()
-            if delete:
-                shutil.rmtree(self.shiftpaths["Products"]["ReportAnalysis"]['path'], onerror=remove_readonly)
+                self._join_pointswithpolygon()
+                self.parse_field()
+                self.create_singlelinewithpoints()
+                self.Fields_Numbers['CIRCUIT_TOLERANCE'] = self.circuitobject.circuitparameters["PARAMETRO_CIRCUITO (m)"]
+                self._get_near_count(self.circuitobject.circuitparameters["PARAMETRO_VISITADOS (m)"])
+                self.get_reports()
+                self.generate_reports()
+                self.save_state()
+                self.place_inToDo()
         except:
             print("Was not able to process realizacao: {} in circuit {}".format(self.Fields_Numbers["SHIFT"],self.Fields_Numbers["CIRCUIT_ID"]))
     
+    
+  
 
+    @timer
+    def place_inToDo(self):
+        src= self.shiftpaths['ShiftName']['path']
+        dst= self.circuitobject.circuitpathdicts['CircuitName']["CircuitVoyages"]['ToDo']['path']
+        copyandremove_directory(src,dst)
     
     @timer
     def generate_reports(self):

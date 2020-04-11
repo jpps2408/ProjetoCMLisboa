@@ -5,7 +5,7 @@ from distutils.dir_util import copy_tree
 import shutil
 import json
 import traceback
-
+import shutil as sh
 def timer(func,*args, **kwargs):
     """Print the runtime of the decorated function"""
     @functools.wraps(func)
@@ -27,6 +27,7 @@ def signal(func,*args, **kwargs):
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
         try:
+
            value = func(*args,**kwargs)
            return value
         except Exception as e:
@@ -56,13 +57,13 @@ def getfilesinpath(inpath,extension="*"):
     '''
 
     #list of the relative paths of the files within the directory "inpath", excluding nested directories
-    filesinpathlist = filter(lambda f: os.path.isfile(os.path.join(inpath,f)), os.listdir(os.path.join(inpath)))
+    filesinpath = filter(lambda f: os.path.isfile(os.path.join(inpath,f)), os.listdir(os.path.join(inpath)))
 
     if extension=="*":
         #list of the absolute paths of the files
-        filesinpath = [os.path.join(inpath,file) for file in filesinpathlist]
+        filesinpath = [os.path.join(inpath,file) for file in filesinpath]
     else:
-        filesinpath = [os.path.join(inpath,file) for file in filesinpathlist if check_fileextension(file,extension)]
+        filesinpath = [os.path.join(inpath,file) for file in filesinpath if check_fileextension(file,extension)]
     return filesinpath
 
 
@@ -103,6 +104,18 @@ def get_place(previous_string,current_string):
             return True
         else:
             return False
+
+
+@timer
+def copyandremove_directory(src,dst):
+    dst = os.path.join(dst,os.path.basename(src))
+    try:
+        sh.copytree(src,dst)
+        sh.rmtree(src)
+    except Exception as e:
+        print(e)
+        print("A realizacao {} nao foi movida para {}.".format(src,dst))
+
 
 
 @timer

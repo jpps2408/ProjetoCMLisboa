@@ -21,8 +21,13 @@ class AncientStructural(object):
         "children" :
          ########BEGIN Layer 1 #########
         [
-                {"namestandard": "InfoTripsFiles",
+                {"namestandard": "InfoCircuitos",
                 "alias": "InfoCircuitos",
+                "filesystem": None,
+                "children" : None},
+
+                {"namestandard": "InfoTripsFiles",
+                "alias": "InfoTripsFiles",
                 "filesystem": None,
                 "children" : None},
 
@@ -42,7 +47,7 @@ class AncientStructural(object):
 
 
     def get_AllCircuits(self):
-        path = self.HandlerPaths['MainDirectory']['CIRCUITS']['path']
+        path = self.HandlerPaths['MainDirectory']['Circuits']['path']
         return [os.path.join(path,round) for round in os.listdir(path)]
 
 
