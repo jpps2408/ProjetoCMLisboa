@@ -2,7 +2,8 @@ from DictionaryInstantiator import *
 from ostools import *
 from DirectoryExlorer import *
 from ShiftDirClass import ShiftDir
-
+from db_creator import db_creator
+from ostools import *
 class AncientStructural(object):
 
 
@@ -57,12 +58,12 @@ class AncientStructural(object):
 
 
     def get_AllDatabaseFiles(self):
-        path = self.HandlerPaths['MainDirectory']['BaseFiles']['path']
+        path = self.HandlerPaths['MainDirectory']['InfoCircuitos']['path']
         return [os.path.join(path,round) for round in os.listdir(path)]
 
 
     @timer
-    def replace_AllKmls(self):
+    def retrieve_AllKmls(self):
         #create a dictionary to hold ShiftDir Objects
         shiftdir_dict ={}
         paths = self.get_AllKmls()
@@ -88,6 +89,20 @@ class AncientStructural(object):
             os.rename(origfile,movedfile)
 
 
+    @timer 
+    def run_dbcamara(self):
+        databasefiles = getfilesinpath(self.HandlerPaths['MainDirectory']['InfoCircuitos']['path'],".csv")
+        dict_csv_dbobject ={}
+        for csvfile in databasefiles:
+            dict_csv_dbobject[csvfile] = db_creator(csvfile,1000)
+        self.dbobject = dict_csv_dbobject[csvfile]
+        self.dict_csv_dbobject = dict_csv_dbobject
+
     
-    
+    @timer
+    def place_inFilled(self,shift):
+        src = shift.shiftpaths['ShiftName']['path']
+        dst = shift.circuitobject.circuitpathdicts['CircuitName']["CircuitVoyages"]['Filled']['path']
+        copyandremove_directory(src,dst)  
+
 

@@ -1,15 +1,9 @@
 
 import pandas as pd
 import sqlite3
-from xlsx2csv import Xlsx2csv
-
-testdotdb = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Fretes_Out2019_Jan202.db"
-conn = sqlite3.connect(testdotdb)
-tablecursor = conn.cursor()
+import os
 chunksize = 1000
-testdotcsv = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Fretes_Out2019_Jan2020.csv"
-file = r"C:\Users\JoaoPedro\Desktop\ArcGISTestMaker\Fretes_Out2019_Jan2020.xlsx"
-Xlsx2csv(file,delimiter =";", outputencoding="cp860").convert(testdotcsv, sheetid=1)
+testdotcsv = r"C:\Users\JoaoPedro\Documents\BIGDirectory\InfoCircuitos\Fretes_Out2019_Jan2020.csv"
 fields = ['FRTG_ID', 'ESCG_ID', '>_1_frete', 'ESCO_ID', 'RSDG_ID_PREVISTO',
        'RSDG_ID_REAL', 'ZL/JF', 'ORS_ID', 'LDES_ID', 'TOPV_ID',
        'ENT_ID_TRANSPORTE', 'UNI_ID', 'RSprev', 'RSreal', 'GrpReal',
@@ -18,12 +12,18 @@ fields = ['FRTG_ID', 'ESCG_ID', '>_1_frete', 'ESCO_ID', 'RSDG_ID_PREVISTO',
        'Hora',  'Peso', 'Uni', 'CRC_ID', 'Circuito', 'Tipo_CRC',
        'VIAT_ID', 'Viatura', 'Matricula', 'Capac',        
         'Frete_Rejeitado']
+csv_name,_ = os.path.splitext(testdotcsv)
+dbfile =  csv_name + ".db"
+conn = sqlite3.connect(dbfile)
 
+tablecursor = conn.cursor()
 for chunk in pd.read_csv(testdotcsv, chunksize=chunksize,sep=";",encoding='cp860'):
     chunk.columns = chunk.columns.str.replace(' ', '_') #replacing spaces with underscores for column names
-    chunk = chunk[fields]
     chunk.to_sql(name="a", con=conn,if_exists="append")
 
+
+conn = sqlite3.connect(testdotdb)
+tablecursor = conn.cursor()
 t = ("I0104",20)
 
 tablecursor = conn.cursor()
@@ -35,18 +35,30 @@ fields = "Circuito,FRTG_ID,ESCG_ID,DIA,MES,ANO,HORA,DATA,PESO,FT"
 
 
 
-#tablecursor = conn.cursor()
-#tablecursor.execute( "SELECT SUM(Peso) FROM a WHERE Circuito='I0103' AND DIA='15' AND ANO='2020'" )
-#data = tablecursor.fetchall()
-#len(data)
-#print(data)
-
-
-#tablecursor = conn.cursor()
-#tablecursor.execute( "SELECT MAX(Ft) FROM a WHERE Circuito='I0103' AND DIA='15' AND ANO='2020'" )
-#data = tablecursor.fetchall()
-#len(data)
+tablecursor = conn.cursor()
+tablecursor.execute( "SELECT SUM(Peso) FROM a WHERE Circuito='I0103' AND DIA='15' AND ANO='2020'" )
+data = tablecursor.fetchall()
+len(data)
 print(data)
+
+
+tablecursor = conn.cursor()
+tablecursor.execute( "SELECT MAX(Ft) FROM a WHERE Circuito='I0103' AND DIA='15' AND ANO='2020'" )
+data = tablecursor.fetchall()
+len(data)
+print(data)
+
+
+
+
+
+
+pd.DataFrame((("a","a"),("b","b")))
+
+
+
+csvfile = r"C:\Users\JoaoPedro\Documents\BIGDirectory\CIRCUITS\I0103\aliasCircuitVoyages\Processados\I0103_V2538_05_01_2020\ReportAnalysis\Appendable.csv"
+stats = pd.read_csv(csvfile,sep=';',index_col=0)
 import datetime
 
 shiftfile = r"C:\Users\JoaoPedro\Documents\BIGDirectory\CIRCUITS\I0103\aliasCircuitVoyages\aliasDoNe\I0103_V2538_15_01_2020\ReportAnalysis\Appendable.csv"

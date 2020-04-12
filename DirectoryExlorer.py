@@ -103,9 +103,20 @@ class CircuitDir(object):
                   "alias": "Processados",
                   "filesystem": None,
                   "children" : None}
+             ,
+                 {
+                  "namestandard": "Filled",
+                  "alias": "Acabados",
+                  "filesystem": None,
+                  "children" : None}
                   ]
              ########END Layer 2 #########
-             }
+             },
+             {
+             "namestandard": "Reports",
+             "alias": "Reports",
+             "filesystem": {"Reports.csv":"Reports.csv"},
+             "children" : None}
            ]
         ########END Layer 1 #########
         }
@@ -180,6 +191,10 @@ class CircuitDir(object):
         path = self.circuitpathdicts['CircuitName']['CircuitVoyages']['DoNe']['path']
         return [os.path.join(path,round) for round in os.listdir(path)]
 
+    def getRealizacoesToDo(self):
+        path = self.circuitpathdicts['CircuitName']['CircuitVoyages']['ToDo']['path']
+        return [os.path.join(path,round) for round in os.listdir(path)]
+
 
 
 
@@ -235,11 +250,11 @@ class CircuitDir(object):
     @signal
     def get_polygon_filenames(self):
         try:
-            self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"] = retrieve_filewithextension(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['path'],'.shp')
+            self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"] = getfilesinpath(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['path'],'.shp')[0]
 
-            self.circuitpathdicts["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"] = retrieve_filewithextension(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['Garage']['path'],'.shp')
+            self.circuitpathdicts["CircuitName"]['CircuitPolygons']['Garage']['filepathdicts']["Garage.shp"] = getfilesinpath(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['Garage']['path'],'.shp')[0]
 
-            self.circuitpathdicts["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"] = retrieve_filewithextension(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['UnLoading']['path'],'.shp')
+            self.circuitpathdicts["CircuitName"]['CircuitPolygons']['UnLoading']['filepathdicts']["UnLoading.shp"] = getfilesinpath(self.circuitpathdicts["CircuitName"]['CircuitPolygons']['UnLoading']['path'],'.shp')[0]
             return True
 
         except:

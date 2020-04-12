@@ -183,6 +183,8 @@ class ShiftDir(object):
                              "UNLOADING_LASTTIME":"DESCARGA",
                              "CIRCUIT_TOLERANCE":"PARAMETRO_CIRCUITO (m)",
                              "VISITED_TOLERANCE":"PARAMETRO_VISITADOS (m)",
+                             "TOTAL_WEIGHT":"CARREGADO (kg)",
+                             "NR_TRIPS":"NR_FRETES",
                              "ABSOLUTE_VISITED_STOPS":"NR_VISITADOS",
                              "RELATIVE_VISITED_STOPS":"%_VISITADOS",
                              "ABSOLUTE_IGNORED_STOPS":"NR_IGNORADOS",
@@ -215,6 +217,7 @@ class ShiftDir(object):
         self.order =["CIRCUIT_ID",
                      "SHIFT",
                      "START_TIME","END_TIME",
+                     "TOTAL_WEIGHT","NR_TRIPS",
                      "CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
                      "TOTAL_TIME","TOTAL_DIST",
                      "ABSOLUTE_VISITED_STOPS", "RELATIVE_VISITED_STOPS",
@@ -271,32 +274,58 @@ class ShiftDir(object):
                       "WEIGHTING_END":None,
                       "WEIGHTING_TIMESTAMP":None}
     
+        self.Fields_Numbers['CIRCUIT_TOLERANCE'] = self.circuitobject.circuitparameters["PARAMETRO_CIRCUITO (m)"]
+        self.Fields_Numbers['VISITED_TOLERANCE'] = self.circuitobject.circuitparameters["PARAMETRO_VISITADOS (m)"]
+
 
     @timer
     def process_shift(self,delete=True):
-      if self.circuitobject.start():
         try:
                 self._join_pointswithpolygon()
                 self.parse_field()
                 self.create_singlelinewithpoints()
-                self.Fields_Numbers['CIRCUIT_TOLERANCE'] = self.circuitobject.circuitparameters["PARAMETRO_CIRCUITO (m)"]
-                self._get_near_count(self.circuitobject.circuitparameters["PARAMETRO_VISITADOS (m)"])
+                self._get_near_count(self.Fields_Numbers['VISITED_TOLERANCE'])
                 self.get_reports()
                 self.generate_reports()
                 self.save_state()
-                self.place_inToDo()
         except:
             print("Was not able to process realizacao: {} in circuit {}".format(self.Fields_Numbers["SHIFT"],self.Fields_Numbers["CIRCUIT_ID"]))
+        else:
+            self.place_inToDo()
     
-    
-  
+
+
+
 
     @timer
     def place_inToDo(self):
         src= self.shiftpaths['ShiftName']['path']
         dst= self.circuitobject.circuitpathdicts['CircuitName']["CircuitVoyages"]['ToDo']['path']
         copyandremove_directory(src,dst)
+
     
+
+    @timer
+    def finalize_shift(self,db):
+        row = pd.read_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
+
+        datetime_inicio = string2datetime(row['H_INICIO'].values[0])
+        datetime_fim = string2datetime(row['H_FIM'].values[0])
+        elapsedtime_ini_fim=datetime_fim-datetime_inicio
+
+        fields=["Circuito","DIA","ANO","HORA","DATA","PESO","FT"]
+        query = "SELECT "+','.join(fields)+" FROM a WHERE Circuito=? AND DIA=? AND MES=? AND ANO=?"
+        querytuple = (row['CIRCUITO'].values[0],datetime_fim.day,datetime_fim.month,datetime_fim.year)
+        row_tuples = db.query_db(query,querytuple)
+
+        apd = pd.DataFrame(list(row_tuples),columns = ["Circuito","DIA","ANO","HORA","DATA","PESO","FT"])
+        row["TOTAL_WEIGHT"] = apd["PESO"].sum()
+        row["NR_TRIPS"] = apd["FT"].max()
+        
+        row.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
+
+        print(row_tuples)
+            
     @timer
     def generate_reports(self):
         #Create a columns list with the fields ordered as in self.order. 
@@ -388,7 +417,6 @@ class ShiftDir(object):
         '''
         #When we get the buffersize, immediately assign it to the corresponding field in the dictionary that holds all the 
         #values that will be in the Appendable csv
-        self.Fields_Numbers['VISITED_TOLERANCE'] = buffersize
         line_sole = self.shiftpaths['ShiftName']['Products']['Line_Sole']['filepathdicts']['Line_Sole.shp']
         line_buffered = self.shiftpaths['ShiftName']['Products']['Line_Buffered']['filepathdicts']['Line_Buffered.shp']
         prs_shpfile = self.circuitobject.circuitpathdicts["CircuitName"]['CircuitPolygons']['CircuitData']['CircuitPoints']['filepathdicts']["CircuitPoints.shp"]
@@ -484,9 +512,8 @@ class ShiftDir(object):
         length_dist_filled = np.zeros((len(blockid_time),))
         zero = float(0)
         for index_iter in sorted(differentblocks):
-            Index = np.where(blockid_time==index)[0][0]
             try:
-                length_dist = np.insert(length_dist,index,zero)
+                length_dist = np.insert(length_dist,index_iter,zero)
             except:
                 length_dist = np.append(length_dist,zero)
         return length_dist

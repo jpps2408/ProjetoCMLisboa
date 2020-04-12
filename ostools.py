@@ -136,7 +136,7 @@ def retrieve_filewithextension(directory,extension):
             if file_extension == extension:
                 shpfile = os.path.join(directory,file)
                 break
-        return shpfile
+        return filename
 
 
 
