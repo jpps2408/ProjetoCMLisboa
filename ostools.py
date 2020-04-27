@@ -129,16 +129,6 @@ def load_stateOfjson(fp):
         data = json.load(json_file)
     return data
 
-@timer
-def retrieve_filewithextension(directory,extension):
-        for file in os.listdir(directory):
-            filename, file_extension = os.path.splitext(file)
-            if file_extension == extension:
-                shpfile = os.path.join(directory,file)
-                break
-        return filename
-
-
 
    
   

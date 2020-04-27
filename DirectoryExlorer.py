@@ -115,7 +115,7 @@ class CircuitDir(object):
              {
              "namestandard": "Reports",
              "alias": "Reports",
-             "filesystem": {"Reports.csv":"Reports.csv"},
+             "filesystem": {"Reports.csv":"Reports.csv", "Resumos.csv":"Resumos.csv"},
              "children" : None}
            ]
         ########END Layer 1 #########
@@ -150,7 +150,6 @@ class CircuitDir(object):
                                   "PARAMETRO_VISITADOS (m)":None}
 
         self.initialize_circuitparametersifnotexist()
-
 
     
     @signal
@@ -198,10 +197,38 @@ class CircuitDir(object):
 
 
 
+    #Gets the reports.csv and groups by circuit and nrfretes, performing the mean on the other columns
+    @timer
+    def write_summaries(self):
+        summaries_circuit = self.circuitpathdicts['CircuitName']["Reports"]["filepathdicts"]["Resumos.csv"]
+        report_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["Reports.csv"]
+
+        displayfields=['CARREGADO (kg)','TEMPO_TOTAL (h)', 'DIST_TOTAL (km)', 'NR_VISITADOS', '%_VISITADOS',
+       'NR_IGNORADOS', '%_IGNORADOS', 'TEMP_GARAGEM (h)',
+       'DIST_GARAGEM (km)', 'VELOCIDADE_GARAGEM (km/h)',
+       'TEMP_DESCARGA (h)', 'DIST_DESCARGA (km)',
+       'VELOCIDADE_DESCARGA (km/h)', 'TEMP_RECOLHA (h)',
+       'DIST_RECOLHA (km)', 'VELOCIDADE_RECOLHA (km/h)', 'TEMP_LIGACAO (h)',
+       'DIST_LIGACAO (km)', 'VELOCIDADE_LIGACAO (km/h)', 'TEMP_OUTROS (h)',
+       'DIST_OUTROS (km)']
+
+
+        report_pd = pd.read_csv(report_circuit,sep=";",index_col=0)
+        summaries = report_pd.groupby(["CIRCUITO","NR_FRETES"])[displayfields].mean()
+        summaries = summaries.round(2)
+        summaries.to_csv(summaries_circuit,sep=";")
 
 
 
 
+    #Writes the results to the reports csv
+    @timer
+    def write_to_reports(self,pdrow):
+        csvfileall=self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["Reports.csv"]
+        if not os.path.exists(csvfileall):
+            pdrow.to_csv(csvfileall, mode='wb', header=True,sep=';')
+        else:
+            pdrow.to_csv(csvfileall, mode='ab', header=False,sep=';')
 
     
     @signal

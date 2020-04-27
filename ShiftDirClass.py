@@ -227,18 +227,7 @@ class ShiftDir(object):
                      "CIRCUIT_TIME","CIRCUIT_DIST","CIRCUIT_VELOCITY",
                      "CONNECTION_TIME","CONNECTION_DIST","CONNECTION_VELOCITY",
                      "OTHERS_TIME","OTHERS_DIST"]
-                #self.order =["CIRCUIT_ID",
-                #     "SHIFT",
-                #     "START_TIME","END_TIME","UNLOADING_LASTTIME",
-                #     "CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
-                #     "TOTAL_TIME","TOTAL_DIST",
-                #     "ABSOLUTE_VISITED_STOPS", "RELATIVE_VISITED_STOPS",
-                #     "ABSOLUTE_IGNORED_STOPS","RELATIVE_IGNORED_STOPS",
-                #     "GARAGE_TIME","GARAGE_DIST","GARAGE_VELOCITY",
-                #     "UNLOADING_TIME","UNLOADING_DIST","UNLOADING_VELOCITY",
-                #     "CIRCUIT_TIME","CIRCUIT_DIST","CIRCUIT_VELOCITY",
-                #     "CONNECTION_TIME","CONNECTION_DIST","CONNECTION_VELOCITY",
-                #     "OTHERS_TIME","OTHERS_DIST"]
+
         self.zone_velfieldmapping = {
                     self.circuitobject.zone_classification['GARAGE']:"GARAGE_VELOCITY",
                     self.circuitobject.zone_classification['CIRCUIT']:"CIRCUIT_VELOCITY",
@@ -305,26 +294,26 @@ class ShiftDir(object):
 
     
 
-    @timer
-    def finalize_shift(self,db):
-        row = pd.read_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
+    #@timer
+    #def finalize_shift(self,db):
+    #    row = pd.read_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
 
-        datetime_inicio = string2datetime(row['H_INICIO'].values[0])
-        datetime_fim = string2datetime(row['H_FIM'].values[0])
-        elapsedtime_ini_fim=datetime_fim-datetime_inicio
+    #    datetime_inicio = string2datetime(row['H_INICIO'].values[0])
+    #    datetime_fim = string2datetime(row['H_FIM'].values[0])
+    #    elapsedtime_ini_fim=datetime_fim-datetime_inicio
 
-        fields=["Circuito","DIA","ANO","HORA","DATA","PESO","FT"]
-        query = "SELECT "+','.join(fields)+" FROM a WHERE Circuito=? AND DIA=? AND MES=? AND ANO=?"
-        querytuple = (row['CIRCUITO'].values[0],datetime_fim.day,datetime_fim.month,datetime_fim.year)
-        row_tuples = db.query_db(query,querytuple)
+    #    fields=["Circuito","DIA","ANO","HORA","DATA","PESO","FT"]
+    #    query = "SELECT "+','.join(fields)+" FROM a WHERE Circuito=? AND DIA=? AND MES=? AND ANO=?"
+    #    querytuple = (row['CIRCUITO'].values[0],datetime_fim.day,datetime_fim.month,datetime_fim.year)
+    #    row_tuples = db.query_db(query,querytuple)
 
-        apd = pd.DataFrame(list(row_tuples),columns = ["Circuito","DIA","ANO","HORA","DATA","PESO","FT"])
-        row["TOTAL_WEIGHT"] = apd["PESO"].sum()
-        row["NR_TRIPS"] = apd["FT"].max()
+    #    apd = pd.DataFrame(list(row_tuples),columns = ["Circuito","DIA","ANO","HORA","DATA","PESO","FT"])
+    #    row["TOTAL_WEIGHT"] = apd["PESO"].sum()
+    #    row["NR_TRIPS"] = apd["FT"].max()
         
-        row.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
+    #    row.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
 
-        print(row_tuples)
+    #    print(row_tuples)
             
     @timer
     def generate_reports(self):

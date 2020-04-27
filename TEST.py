@@ -94,11 +94,14 @@ elapsedtimebetweenunlaodingandending = string2datetime(shiftpd['H_FIM'].values[0
 
 
 
-
-
-
-
-
+meanfields=[ 'CARREGADO (kg)','TEMPO_TOTAL (h)', 'DIST_TOTAL (km)', 'NR_VISITADOS', '%_VISITADOS',
+       'NR_IGNORADOS', '%_IGNORADOS', 'TEMP_GARAGEM (h)',
+       'DIST_GARAGEM (km)', 'VELOCIDADE_GARAGEM (km/h)',
+       'TEMP_DESCARGA (h)', 'DIST_DESCARGA (km)',
+       'VELOCIDADE_DESCARGA (km/h)', 'TEMP_RECOLHA (h)',
+       'DIST_RECOLHA (km)', 'VELOCIDADE_RECOLHA (km/h)', 'TEMP_LIGACAO (h)',
+       'DIST_LIGACAO (km)', 'VELOCIDADE_LIGACAO (km/h)', 'TEMP_OUTROS (h)',
+       'DIST_OUTROS (km)']
 
 
 
