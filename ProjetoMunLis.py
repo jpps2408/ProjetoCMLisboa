@@ -13,8 +13,8 @@ from MasterHandler_ import *
 
 #r"C:\Users\JoaoPedro\Documents\BIGDirectory"
 
-#path = input("Introduza o caminho: \n")
-path =r"C:\Users\JoaoPedro\Documents\BIGDirectory"
+path = input("Introduza o caminho: \n")
+#path =r"C:\Users\JoaoPedro\Documents\BIGDirectory"
 AS = AncientStructural(path)
 AS.retrieve_AllKmls()
 circuit_list = AS.get_AllCircuits()

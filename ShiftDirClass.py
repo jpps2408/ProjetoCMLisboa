@@ -429,7 +429,6 @@ class ShiftDir(object):
         #We can output this in order to get the history timeline of the shift. THIS IS GOLD
         df["DISPLACEMENT"] = df["DISPLACEMENT"].apply(lambda num: round(num,2))
         df["HOURS"] = df["HOURS"].apply(lambda num: round(num,3))
-        df.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["History_Timline.csv"],sep=';')
         
 
     @timer
