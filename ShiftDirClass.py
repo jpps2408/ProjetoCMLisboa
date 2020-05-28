@@ -117,7 +117,7 @@ class ShiftDir(object):
                {
                   "namestandard": "ReportAnalysis",
                   "alias": "ReportAnalysis",
-                  "filesystem": {"History_Timline.csv":"History_Timline.csv","Appendable.csv":"Appendable.csv"},
+                  "filesystem": {"Uncharted.csv":"PontosNaoVisitados.csv", "Appendable.csv":"Appendable.csv"},
                   "children" : None}
 
                   ]
@@ -178,6 +178,8 @@ class ShiftDir(object):
 
         self.Fields_Display={"CIRCUIT_ID":"CIRCUITO",
                              "SHIFT":"PERCURSO",
+                             "CAR":"VIATURA",
+                             "YYMMDD":"YYMMDD",
                              "START_TIME":"H_INICIO",
                              "END_TIME":"H_FIM",
                              "UNLOADING_LASTTIME":"DESCARGA",
@@ -211,11 +213,14 @@ class ShiftDir(object):
 
         self.Fields_Numbers={_ : None for _ in self.Fields_Display.keys()}
         self.Fields_Numbers["SHIFT"] = os.path.basename(self.shiftdirectory)
+        self.Fields_Numbers["CAR"] = os.path.basename(self.shiftdirectory).split("_")[1]
         self.Fields_Numbers.update(self.circuitobject.circuitdict)
         
 
         self.order =["CIRCUIT_ID",
                      "SHIFT",
+                     "CAR",
+                     "YYMMDD",
                      "START_TIME","END_TIME",
                      "TOTAL_WEIGHT","NR_TRIPS",
                      "CIRCUIT_TOLERANCE","VISITED_TOLERANCE",
@@ -268,7 +273,7 @@ class ShiftDir(object):
 
 
     @timer
-    def process_shift(self,delete=True):
+    def process_shift(self,db,delete=True):
         try:
                 self._join_pointswithpolygon()
                 self.parse_field()
@@ -277,6 +282,7 @@ class ShiftDir(object):
                 self.get_reports()
                 self.generate_reports()
                 self.save_state()
+                self.finalize_shift(db)
         except:
             print("Was not able to process realizacao: {} in circuit {}".format(self.Fields_Numbers["SHIFT"],self.Fields_Numbers["CIRCUIT_ID"]))
         else:
@@ -294,27 +300,32 @@ class ShiftDir(object):
 
     
 
-    #@timer
-    #def finalize_shift(self,db):
-    #    row = pd.read_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
+    @timer
+    def finalize_shift(self,db):
+        row = pd.read_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
+        Columns = [self.Fields_Display[key] for key in self.order]
+        datetime_inicio = string2datetime(row['H_INICIO'].values[0])
+        datetime_fim = string2datetime(row['H_FIM'].values[0])
+        viatura = row['VIATURA'].values[0][1:]
+        elapsedtime_ini_fim=datetime_fim-datetime_inicio
 
-    #    datetime_inicio = string2datetime(row['H_INICIO'].values[0])
-    #    datetime_fim = string2datetime(row['H_FIM'].values[0])
-    #    elapsedtime_ini_fim=datetime_fim-datetime_inicio
+        fields=["Circuito","DIA","ANO","HORA","DATA","PESO","FT","VIATURA"]
+        query = "SELECT "+','.join(fields)+" FROM a WHERE Circuito=? AND DIA=? AND MES=? AND ANO=? AND VIATURA=?"
+        querytuple = (row['CIRCUITO'].values[0],datetime_fim.day,datetime_fim.month,datetime_fim.year,viatura)
+        row_tuples = db.query_db(query,querytuple)
 
-    #    fields=["Circuito","DIA","ANO","HORA","DATA","PESO","FT"]
-    #    query = "SELECT "+','.join(fields)+" FROM a WHERE Circuito=? AND DIA=? AND MES=? AND ANO=?"
-    #    querytuple = (row['CIRCUITO'].values[0],datetime_fim.day,datetime_fim.month,datetime_fim.year)
-    #    row_tuples = db.query_db(query,querytuple)
+        apd = pd.DataFrame(list(row_tuples),columns = ["Circuito","DIA","ANO","HORA","DATA","PESO","FT","VIATURA"])
+        row[self.Fields_Display["TOTAL_WEIGHT"]] = apd["PESO"].sum()
+        row[self.Fields_Display["NR_TRIPS"]] = apd["FT"].count()
 
-    #    apd = pd.DataFrame(list(row_tuples),columns = ["Circuito","DIA","ANO","HORA","DATA","PESO","FT"])
-    #    row["TOTAL_WEIGHT"] = apd["PESO"].sum()
-    #    row["NR_TRIPS"] = apd["FT"].max()
-        
-    #    row.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
-
-    #    print(row_tuples)
+        row = row[Columns]
+        row[Columns].to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';', index=False)
+        self.write_to_reports(row[Columns])
+        print(row_tuples)
             
+
+
+
     @timer
     def generate_reports(self):
         #Create a columns list with the fields ordered as in self.order. 
@@ -328,7 +339,7 @@ class ShiftDir(object):
         f = pd.DataFrame([Row], columns=Columns)
         #The pandas DataFrame object uses the method to_csv to write it to a csv file, with a separator ; to make sure it can be seen using 
         #a common .xlsx file reader
-        f.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
+        f.to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';', index=False)
 
 
     @timer 
@@ -362,6 +373,8 @@ class ShiftDir(object):
         self._join_linewithstaticstops(buffersize)
         #Get the Shapefile that has the processed points
         near_shpfile = self.shiftpaths['ShiftName']['Products']['Circuit_Stops_Original']['filepathdicts']['Circuit_Stops_Original.shp']
+        
+
         #Get the field
         join_count = "Join_Count"
         #Create the fieldname list. Since it is a single field, it is not needed; However, if we had more fields it would be.
@@ -376,6 +389,7 @@ class ShiftDir(object):
            ignored_point_count = 0
            #Each row is a list with the values in the order specified by the field_name list we gave it as inpuy
            for row in cursor:
+
                #if the field join count has a 0 value
                #increment the counter
                if row[field_names.index(join_count)]==0:
@@ -390,13 +404,47 @@ class ShiftDir(object):
         visited_point_ratio = round(100*(visited_point_count/float(total_point_count)),2)
         ignored_point_ratio = round(100*(ignored_point_count/float(total_point_count)),2)
 
+        field_names = [join_count,"PRSL_ID"]
+        near_gpd = gpd.read_file(near_shpfile)
+        near_gpd = near_gpd[field_names]
+
+        near_gpd[self.Fields_Display["YYMMDD"]] = self.Fields_Numbers["YYMMDD"]
+        near_gpd[self.Fields_Display["CIRCUIT_ID"]] = self.Fields_Numbers["CIRCUIT_ID"]
+        near_gpd[self.Fields_Display["SHIFT"]] = self.Fields_Numbers["SHIFT"]
+        near_gpd[self.Fields_Display["CIRCUIT_TOLERANCE"]] = self.Fields_Numbers["CIRCUIT_TOLERANCE"]
+        near_gpd[self.Fields_Display["VISITED_TOLERANCE"]] = self.Fields_Numbers["VISITED_TOLERANCE"]
+        
+        near_gpd[["CIRCUITO","PERCURSO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","PRSL_ID",join_count]].to_csv(self.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Uncharted.csv"],sep=';',index=False,header = True)
+        self.write_to_visitedreports(near_gpd[["CIRCUITO","PERCURSO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","PRSL_ID",join_count]])
+
         #update the dictionary that will hold the values of the fields in the Appendable csv
         self.Fields_Numbers["ABSOLUTE_VISITED_STOPS"] = visited_point_count
         self.Fields_Numbers["RELATIVE_VISITED_STOPS"] = visited_point_ratio
         self.Fields_Numbers["ABSOLUTE_IGNORED_STOPS"] = ignored_point_count
         self.Fields_Numbers["RELATIVE_IGNORED_STOPS"] = ignored_point_ratio
-       
+     
         
+    #Writes the results to the reports csv
+    @timer
+    def write_to_reports(self,pdrow):
+        csvfileall=self.circuitobject.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["IndividualReports.csv"]
+        if not os.path.exists(csvfileall):
+            pdrow.to_csv(csvfileall, mode='wb', header=True,sep=';', index=False)
+        else:
+            pdrow.to_csv(csvfileall, mode='ab', header=False,sep=';', index=False)
+
+
+    #Writes the results to the reports csv
+    @timer
+    def write_to_visitedreports(self,near_gpd):
+        csvfileall=self.circuitobject.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["VisitedIndividualReports.csv"]
+        if not os.path.exists(csvfileall):
+            near_gpd.drop_duplicates(subset = ["PERCURSO","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","PRSL_ID"],inplace=True)
+            near_gpd.to_csv(csvfileall, mode='wb', header=True,sep=';', index=False)
+            
+        else:
+            near_gpd.drop_duplicates(subset = ["PERCURSO","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","PRSL_ID"],inplace=True)
+            near_gpd.to_csv(csvfileall, mode='ab', header=False,sep=';', index=False)    
            
     @timer 
     def _join_linewithstaticstops(self,buffersize):
@@ -426,9 +474,6 @@ class ShiftDir(object):
         df = df[fieldnames]
         #Finally get the statistics that the client wants
         self._get_zstats(df)
-        #We can output this in order to get the history timeline of the shift. THIS IS GOLD
-        df["DISPLACEMENT"] = df["DISPLACEMENT"].apply(lambda num: round(num,2))
-        df["HOURS"] = df["HOURS"].apply(lambda num: round(num,3))
         
 
     @timer
@@ -452,7 +497,7 @@ class ShiftDir(object):
             #round the hour to 3 decimal places
             rounded_hour = round(hours[i],3)
             #round the displacement in meters to one decimal place and multiply the m2km
-            rounded_displacement = round(displacements[i],1)*m2km
+            rounded_displacement = round(displacements[i]*m2km,1)
             #put it in the main dictionary if the zone matches the code of the zone
             self.Fields_Numbers[self.zone_timefieldmapping[zone]] = rounded_hour
             self.Fields_Numbers[self.zone_displfieldmapping[zone]] = rounded_displacement
@@ -461,7 +506,7 @@ class ShiftDir(object):
             self.Fields_Numbers[self.zone_velfieldmapping[zone]] = round(speed,2)
         #put the totals inside the dictionary. this will always be outside the sum
         self.Fields_Numbers['TOTAL_TIME'] = round(df["HOURS"].sum(),2)
-        self.Fields_Numbers['TOTAL_DIST'] = round(df["DISPLACEMENT"].sum(),1)*m2km
+        self.Fields_Numbers['TOTAL_DIST'] = round(df["DISPLACEMENT"].sum()*m2km,1)
 
 
     @timer
@@ -610,6 +655,8 @@ class ShiftDir(object):
         Field_Names_Groupby["HOURS"] = map(string2hour,Field_Names_Groupby["INTERVAL"])
         Fields_Numbers["START_TIME"] = Field_Names_Groupby["TIME"][0]
         Fields_Numbers["END_TIME"] = row[field_names.index("timestamp")]
+        
+        Fields_Numbers["YYMMDD"] = datetime2string(string2datetime(Fields_Numbers["START_TIME"]).date())
 
         #aux_zone = Field_Names_Groupby["ZONE"][:]
         #aux_zone.reverse()

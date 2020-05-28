@@ -109,52 +109,57 @@ class AncientStructural(object):
         dst = shift.circuitobject.circuitpathdicts['CircuitName']["CircuitVoyages"]['Filled']['path']
         copyandremove_directory(src,dst)  
 
+
     @timer
-    def finalize_shift(self,shift,db):
+    def finalize_shift(self,shift):
         row = pd.read_csv(shift.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
-        Columns = [shift.Fields_Display[key] for key in shift.order]
 
-        datetime_inicio = string2datetime(row['H_INICIO'].values[0])
-        datetime_fim = string2datetime(row['H_FIM'].values[0])
-        elapsedtime_ini_fim=datetime_fim-datetime_inicio
+        #shift.circuitobject.write_to_reports(row)
 
-        fields=["Circuito","DIA","ANO","HORA","DATA","PESO","FT"]
-        query = "SELECT "+','.join(fields)+" FROM a WHERE Circuito=? AND DIA=? AND MES=? AND ANO=?"
-        querytuple = (row['CIRCUITO'].values[0],datetime_fim.day,datetime_fim.month,datetime_fim.year)
-        row_tuples = db.query_db(query,querytuple)
-
-        apd = pd.DataFrame(list(row_tuples),columns = ["Circuito","DIA","ANO","HORA","DATA","PESO","FT"])
-        row[shift.Fields_Display["TOTAL_WEIGHT"]] = apd["PESO"].sum()
-        row[shift.Fields_Display["NR_TRIPS"]] = apd["FT"].max()
-        row = row[Columns]
-        row[Columns].to_csv(shift.shiftpaths["ShiftName"]["ReportAnalysis"]["filepathdicts"]["Appendable.csv"],sep=';')
-        shift.circuitobject.write_to_reports(row)
+        
 
 
     @timer
     def aggregate_summaries(self):
         circuit_list = self.get_AllCircuits()
-        circuit_folder = circuit_list[0]
         all_circuits_csv = self.HandlerPaths["MainDirectory"]["InfoTripsFiles"]["filepathdicts"]["Estats_Circuitos.csv"]
-        self.create_single_summary(all_circuits_csv,circuit_folder)
-        
-        for circuit_folder in circuit_list[1:]:
-            self.add_single_summary(all_circuits_csv,circuit_folder)
+        for circuit_folder in circuit_list[:]:
+            try:
+                if not os.path.exists(all_circuits_csv):
+                    self.create_single_summary(all_circuits_csv,circuit_folder)
+                else:
+                  try:
+                    self.add_single_summary(all_circuits_csv,circuit_folder)
+                  except Exception as e:
+                    print("The circuit didn't have any generated csv files")
+            except Exception as e:
+                    print("The circuit didn't have any generated csv files")
     
 
-    @signal
+    @timer
     def create_single_summary(self,all_circuits_csv,circuit_folder):
         circuit = CircuitDir(circuit_folder)
         circuit.write_summaries()
         single_circuit_csv = circuit.circuitpathdicts['CircuitName']["Reports"]["filepathdicts"]["Resumos.csv"]
-        single_circuit_pd = pd.read_csv(single_circuit_csv,sep=";",index_col=0)
-        single_circuit_pd.to_csv(all_circuits_csv,sep=";",mode='wb', header=True)
+        if os.path.exists(single_circuit_csv):
+            single_circuit_pd = pd.read_csv(single_circuit_csv,sep=";")
+            single_circuit_pd.to_csv(all_circuits_csv,mode='wb', header=False,sep=";", index=False) 
+
+        all_circuirs_pd = pd.read_csv(all_circuits_csv,sep=";")
+        all_circuirs_pd.drop_duplicates()
+        all_circuirs_pd.to_csv(all_circuits_csv,sep=";", index=False)
+        
     
 
-    @signal
+    @timer
     def add_single_summary(self,all_circuits_csv,circuit_folder):
         circuit = CircuitDir(circuit_folder)
         circuit.write_summaries()
         single_circuit_csv = circuit.circuitpathdicts['CircuitName']["Reports"]["filepathdicts"]["Resumos.csv"]
-        single_circuit_pd = pd.read_csv(single_circuit_csv,sep=";",index_col=0)
-        single_circuit_pd.to_csv(all_circuits_csv,mode='ab', header=False,sep=";")
+        if os.path.exists(single_circuit_csv):
+            single_circuit_pd = pd.read_csv(single_circuit_csv,sep=";")
+            single_circuit_pd.to_csv(all_circuits_csv,mode='ab', header=False,sep=";", index=False) 
+        
+        all_circuirs_pd = pd.read_csv(all_circuits_csv,sep=";")
+        all_circuirs_pd.drop_duplicates()
+        all_circuirs_pd.to_csv(all_circuits_csv,sep=";", index=False)   

@@ -115,7 +115,7 @@ class CircuitDir(object):
              {
              "namestandard": "Reports",
              "alias": "Reports",
-             "filesystem": {"Reports.csv":"Reports.csv", "Resumos.csv":"Resumos.csv"},
+             "filesystem": {"CountsVisitedFinal.csv":"NR_PONTOS_PRS_VISITADOS_TURNO.csv","CountsVisited.csv":"NR_PONTOS_PRS_VISITADOS_REALIZ.csv","VisitedIndividualReports.csv":"PONTOS_PRS_VISITADOS_REALIZ.csv","VisitedReports.csv":"PONTOS_PRS_VISITADOS_TURNO.csv","IndividualReports.csv":"ESTATISTICAS_REALIZACAO.csv","Reports.csv":"ESTATISTICAS_TURNO.csv", "Resumos.csv":"Resumos.csv"},
              "children" : None}
            ]
         ########END Layer 1 #########
@@ -147,7 +147,8 @@ class CircuitDir(object):
 
 
         self.circuitparameters = {"PARAMETRO_CIRCUITO (m)":None,
-                                  "PARAMETRO_VISITADOS (m)":None}
+                                  "PARAMETRO_VISITADOS (m)":None,
+                                  "PARAMETRO_CORTE (%)":None}
 
         self.initialize_circuitparametersifnotexist()
 
@@ -183,7 +184,7 @@ class CircuitDir(object):
 
 
 
-
+    
 
 
     def getRealizacoesDoNe(self):
@@ -200,35 +201,138 @@ class CircuitDir(object):
     #Gets the reports.csv and groups by circuit and nrfretes, performing the mean on the other columns
     @timer
     def write_summaries(self):
-        summaries_circuit = self.circuitpathdicts['CircuitName']["Reports"]["filepathdicts"]["Resumos.csv"]
-        report_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["Reports.csv"]
+        
+        visitedpointsindividual_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["VisitedIndividualReports.csv"]
+        individualreports_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["IndividualReports.csv"]
 
-        displayfields=['CARREGADO (kg)','TEMPO_TOTAL (h)', 'DIST_TOTAL (km)', 'NR_VISITADOS', '%_VISITADOS',
-       'NR_IGNORADOS', '%_IGNORADOS', 'TEMP_GARAGEM (h)',
-       'DIST_GARAGEM (km)', 'VELOCIDADE_GARAGEM (km/h)',
-       'TEMP_DESCARGA (h)', 'DIST_DESCARGA (km)',
-       'VELOCIDADE_DESCARGA (km/h)', 'TEMP_RECOLHA (h)',
-       'DIST_RECOLHA (km)', 'VELOCIDADE_RECOLHA (km/h)', 'TEMP_LIGACAO (h)',
-       'DIST_LIGACAO (km)', 'VELOCIDADE_LIGACAO (km/h)', 'TEMP_OUTROS (h)',
-       'DIST_OUTROS (km)']
+        circuitpaths = [visitedpointsindividual_circuit,individualreports_circuit]
+        print(all([os.path.exists(path) for path in circuitpaths]))
+        if all([os.path.exists(path) for path in circuitpaths]):     
+            
+            statsPRS_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["CountsVisited.csv"]
+        
+            visitedpoints_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["VisitedReports.csv"]
+            statsPRSAppendable_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["CountsVisitedFinal.csv"]
+
+            report_circuit = self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["Reports.csv"]
+            summaries_circuit = self.circuitpathdicts['CircuitName']["Reports"]["filepathdicts"]["Resumos.csv"]
+            visitedpoints = pd.read_csv(visitedpointsindividual_circuit,sep=';')
+            visitedpoints.drop_duplicates(subset = ["PERCURSO","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","PRSL_ID"],inplace = True)
+            visitedpoints.to_csv(visitedpointsindividual_circuit,header=True,sep=';', index=False)
+
+            #To verify that this is correct, grab the files VisitedPoints and IndivualVisitedPoints and sort by PRSL_ID and then Percurso. This will guarantee
+            #that each PRSL_ID has the two versions of PERCURSO.
+            visitedpointsreport = visitedpoints.groupby(["CIRCUITO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","PRSL_ID"], as_index=False).max()        
+            visitedpointsreport.to_csv(visitedpoints_circuit,header=True,sep=';', index=False)
+        
+            visitedpointsreport = visitedpointsreport.groupby(["CIRCUITO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","Join_Count"],as_index=False).size().reset_index(name='counts')
+            visitedpointsreport.to_csv(statsPRS_circuit,header=True,sep=';', index=False)
+            visitedpointsreport_unvisitedpoints = visitedpointsreport[visitedpointsreport["Join_Count"]==0]
+            visitedpointsreport_total = visitedpointsreport.groupby(["CIRCUITO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"],as_index=False)["counts"].sum()
+            visitedpointsreport_est=pd.merge(visitedpointsreport_unvisitedpoints,visitedpointsreport_total,on=["CIRCUITO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"])
+            visitedpointsreport_est = visitedpointsreport_est.rename(columns={'counts_x':"NR_IGNORADOS", 'counts_y':"NR_TOTAL"})
+            visitedpointsreport_est["NR_VISITADOS"] = visitedpointsreport_est["NR_TOTAL"]-visitedpointsreport_est["NR_IGNORADOS"]
+            visitedpointsreport_est["%_VISITADOS"] =  visitedpointsreport_est["NR_VISITADOS"]/visitedpointsreport_est["NR_TOTAL"]*100
+            visitedpointsreport_est["%_IGNORADOS"] =  visitedpointsreport_est["NR_IGNORADOS"]/visitedpointsreport_est["NR_TOTAL"]*100
+            visitedpointsreport_est= visitedpointsreport_est.round(2)
+
+            #visitedpointsreport_counts2 = visitedpointsreport.pivot(index = ["YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"],columns = "Join_Count",values = "counts").reset_index()
+            #visitedpointsreport_counts3 = visitedpointsreport_counts2.rename(columns ={1:"NR_VISITADOS",0:"NR_IGNORADOS"})
+            #visitedpointsreport = visitedpointsreport.groupby(["CIRCUITO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"],as_index=False)["Join_Count"].count()
+            #visitedpointsreport = visitedpointsreport.rename(columns = {"Join_Count":"Count"})
+            #visitedpointsreport = pd.concat([visitedpointsreport,visitedpointsreport_counts3],axis=1)
+        
+            visitedpointsreport_est.to_csv(statsPRSAppendable_circuit,header=True,sep=';', index=False)
+
+       
+            #visitedpointsreport = pd.concat([visitedpointsreport, visitedpointsreport_count], axis=1, ignore_index=True)
+        
+        
 
 
-        report_pd = pd.read_csv(report_circuit,sep=";",index_col=0)
-        summaries = report_pd.groupby(["CIRCUITO","NR_FRETES"])[displayfields].mean()
-        summaries = summaries.round(2)
-        summaries.to_csv(summaries_circuit,sep=";")
+
+            individualreports = pd.read_csv(individualreports_circuit,sep=';')
+            individualreports.drop_duplicates(subset = ["PERCURSO","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"],inplace = True)
+            individualreports.to_csv(individualreports_circuit,header=True,sep=';', index=False)
 
 
+
+            allfields= ["CIRCUITO","PERCURSO","VIATURA","YYMMDD","H_INICIO","H_FIM",
+                       "PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)",
+                        "CARREGADO (kg)","NR_FRETES","NR_VISITADOS","%_VISITADOS",
+                        "NR_IGNORADOS","%_IGNORADOS","TEMPO_TOTAL (h)","DIST_TOTAL (km)",
+                        "TEMP_GARAGEM (h)","DIST_GARAGEM (km)","VELOCIDADE_GARAGEM (km/h)",
+                        "TEMP_DESCARGA (h)","DIST_DESCARGA (km)","VELOCIDADE_DESCARGA (km/h)",
+                        "TEMP_RECOLHA (h)","DIST_RECOLHA (km)","VELOCIDADE_RECOLHA (km/h)",
+                        "TEMP_LIGACAO (h)","DIST_LIGACAO (km)","VELOCIDADE_LIGACAO (km/h)",
+                        "TEMP_OUTROS (h)","DIST_OUTROS (km)"]
+
+            displayfields=['CARREGADO (kg)','TEMPO_TOTAL (h)', 'DIST_TOTAL (km)', 'NR_VISITADOS', '%_VISITADOS',
+           'NR_IGNORADOS', '%_IGNORADOS', 'TEMP_GARAGEM (h)',
+           'DIST_GARAGEM (km)', 'VELOCIDADE_GARAGEM (km/h)',
+           'TEMP_DESCARGA (h)', 'DIST_DESCARGA (km)',
+           'VELOCIDADE_DESCARGA (km/h)', 'TEMP_RECOLHA (h)',
+           'DIST_RECOLHA (km)', 'VELOCIDADE_RECOLHA (km/h)', 'TEMP_LIGACAO (h)',
+           'DIST_LIGACAO (km)', 'VELOCIDADE_LIGACAO (km/h)', 'TEMP_OUTROS (h)',
+           'DIST_OUTROS (km)']       
+
+            correct_order = ["CIRCUITO","NR_FRETES","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)",'CARREGADO (kg)','TEMPO_TOTAL (h)', 'DIST_TOTAL (km)', 'NR_VISITADOS', '%_VISITADOS',
+           'NR_IGNORADOS', '%_IGNORADOS', 'TEMP_GARAGEM (h)',
+           'DIST_GARAGEM (km)', 'VELOCIDADE_GARAGEM (km/h)',
+           'TEMP_DESCARGA (h)', 'DIST_DESCARGA (km)',
+           'VELOCIDADE_DESCARGA (km/h)', 'TEMP_RECOLHA (h)',
+           'DIST_RECOLHA (km)', 'VELOCIDADE_RECOLHA (km/h)', 'TEMP_LIGACAO (h)',
+           'DIST_LIGACAO (km)', 'VELOCIDADE_LIGACAO (km/h)', 'TEMP_OUTROS (h)',
+           'DIST_OUTROS (km)']
+
+            reports_complete = individualreports.groupby(["CIRCUITO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"],as_index=False).sum()
+            reports_complete = reports_complete.drop(columns=['NR_IGNORADOS', '%_IGNORADOS','NR_VISITADOS', '%_VISITADOS'])
+            reports_complete=pd.merge(reports_complete,visitedpointsreport_est,on=["CIRCUITO","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"])
+            reports_complete['VELOCIDADE_GARAGEM (km/h)'] = reports_complete['DIST_GARAGEM (km)']/reports_complete['TEMP_GARAGEM (h)']
+            reports_complete['VELOCIDADE_DESCARGA (km/h)'] = reports_complete['DIST_DESCARGA (km)']/reports_complete['TEMP_DESCARGA (h)']
+            reports_complete['VELOCIDADE_RECOLHA (km/h)'] = reports_complete['DIST_RECOLHA (km)']/reports_complete['TEMP_RECOLHA (h)']
+            reports_complete['VELOCIDADE_LIGACAO (km/h)'] = reports_complete['DIST_LIGACAO (km)']/reports_complete['TEMP_LIGACAO (h)']
+            reports_complete = reports_complete.round(2)
+
+            reports_complete[["CIRCUITO","NR_FRETES","YYMMDD","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)",'CARREGADO (kg)','TEMPO_TOTAL (h)', 'DIST_TOTAL (km)', 'NR_VISITADOS', '%_VISITADOS',
+           'NR_IGNORADOS', '%_IGNORADOS', 'TEMP_GARAGEM (h)',
+           'DIST_GARAGEM (km)', 'VELOCIDADE_GARAGEM (km/h)',
+           'TEMP_DESCARGA (h)', 'DIST_DESCARGA (km)',
+           'VELOCIDADE_DESCARGA (km/h)', 'TEMP_RECOLHA (h)',
+           'DIST_RECOLHA (km)', 'VELOCIDADE_RECOLHA (km/h)', 'TEMP_LIGACAO (h)',
+           'DIST_LIGACAO (km)', 'VELOCIDADE_LIGACAO (km/h)', 'TEMP_OUTROS (h)',
+           'DIST_OUTROS (km)']].to_csv(report_circuit,header=True,sep=';', index=False)
+        
+
+
+            self._get_jsontolerances()
+            report_pd = pd.read_csv(report_circuit,sep=";")
+            print(self.circuitparameters["PARAMETRO_CORTE (%)"])
+            report_pd = report_pd[report_pd["%_VISITADOS"]>self.circuitparameters["PARAMETRO_CORTE (%)"]]
+            summaries = report_pd.groupby(["CIRCUITO","NR_FRETES","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)"],as_index=False).mean()
+            summaries["PARAMETRO_CORTE (%)"] = self.circuitparameters["PARAMETRO_CORTE (%)"]
+            summaries = summaries.round(2)
+            summaries[["CIRCUITO","NR_FRETES","PARAMETRO_CIRCUITO (m)","PARAMETRO_VISITADOS (m)","PARAMETRO_CORTE (%)",'CARREGADO (kg)','TEMPO_TOTAL (h)', 'DIST_TOTAL (km)', 'NR_VISITADOS', '%_VISITADOS',
+           'NR_IGNORADOS', '%_IGNORADOS', 'TEMP_GARAGEM (h)',
+           'DIST_GARAGEM (km)', 'VELOCIDADE_GARAGEM (km/h)',
+           'TEMP_DESCARGA (h)', 'DIST_DESCARGA (km)',
+           'VELOCIDADE_DESCARGA (km/h)', 'TEMP_RECOLHA (h)',
+           'DIST_RECOLHA (km)', 'VELOCIDADE_RECOLHA (km/h)', 'TEMP_LIGACAO (h)',
+           'DIST_LIGACAO (km)', 'VELOCIDADE_LIGACAO (km/h)', 'TEMP_OUTROS (h)',
+           'DIST_OUTROS (km)']].to_csv(summaries_circuit,sep=";", index=False)
+
+
+    
 
 
     #Writes the results to the reports csv
     @timer
     def write_to_reports(self,pdrow):
-        csvfileall=self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["Reports.csv"]
+        csvfileall=self.circuitpathdicts["CircuitName"]["Reports"]["filepathdicts"]["IndividualReports.csv"]
         if not os.path.exists(csvfileall):
-            pdrow.to_csv(csvfileall, mode='wb', header=True,sep=';')
+            pdrow.to_csv(csvfileall, mode='wb', header=True,sep=';', index=False)
         else:
-            pdrow.to_csv(csvfileall, mode='ab', header=False,sep=';')
+            pdrow.to_csv(csvfileall, mode='ab', header=False,sep=';', index=False)
 
     
     @signal
@@ -294,6 +398,7 @@ class CircuitDir(object):
     def _load_circuitparameters(self,jsontolerances):
         self.circuitparameters["PARAMETRO_VISITADOS (m)"] = int(jsontolerances["PARAMETRO_VISITADOS (m)"])
         self.circuitparameters["PARAMETRO_CIRCUITO (m)"] = int(jsontolerances["PARAMETRO_CIRCUITO (m)"])
+        self.circuitparameters["PARAMETRO_CORTE (%)"] = int(jsontolerances["PARAMETRO_CORTE (%)"])
         self.circuitdict["CIRCUIT_TOLERANCE"] = self.circuitparameters["PARAMETRO_CIRCUITO (m)"]
 
 
